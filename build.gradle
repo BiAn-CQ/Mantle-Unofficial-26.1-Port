@@ -1,0 +1,172 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.143'
+    id 'idea'
+}
+
+version = "${minecraft_version}-${mod_version}"
+group = mod_group_id
+
+base {
+    archivesName = 'Mantle'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+        // Avoid stale "25-loom" preview builds that identify as Java 25 but
+        // cannot compile the GA language/API level used by Minecraft 26.1.
+        vendor = JvmVendorSpec.MICROSOFT
+    }
+    withSourcesJar()
+}
+
+sourceSets.main {
+    resources {
+        srcDir('src/generated/resources')
+        exclude('.cache')
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'BlameJared'
+        url = 'https://maven.blamejared.com'
+    }
+}
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        releaseServer {
+            server()
+            gameDirectory = file('build/release-server-smoke')
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        data {
+            clientData()
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/resources/').absolutePath,
+                    '--existing', file('src/main/resources/').absolutePath
+        }
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        mantle {
+            sourceSet(sourceSets.main)
+        }
+    }
+
+    // Run Mantle's core JUnit suite with the same transformed Minecraft and
+    // NeoForge classes used by the mod. This avoids test-only stand-ins for
+    // public serialization and registry-facing contracts.
+    unitTest {
+        enable()
+        testedMod = mods.mantle
+    }
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    // JEI 26.1 is optional at runtime, but its API is needed to compile the
+    // Mantle ingredient helpers and plugin.
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+
+    compileOnly 'org.projectlombok:lombok:1.18.46'
+    annotationProcessor 'org.projectlombok:lombok:1.18.46'
+    testCompileOnly 'org.projectlombok:lombok:1.18.46'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.46'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.13.4'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.13.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core:5.19.0'
+    testImplementation 'org.assertj:assertj-core:3.27.4'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+    systemProperty 'mantle.projectDir', project.projectDir.absolutePath
+}
+
+// Keep the isolated release-smoke server controllable from Gradle so the QA
+// run can use Minecraft's normal `stop` command and prove a clean shutdown.
+tasks.named('runReleaseServer').configure {
+    standardInput = System.in
+}
+
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            jei_range              : jei_range,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    // Keep removal warnings actionable. Non-removal deprecations are audited
+    // separately because the fixed NeoForge 26.1 compatibility layer must
+    // retain several upstream APIs that still exist in this target.
+    options.compilerArgs.addAll(['-Xmaxerrs', '1000', '-Xmaxwarns', '1000', '-Xlint:removal', '-Xlint:-deprecation', '-Xlint:-unchecked'])
+}
+
+// Emits the resolved inputs used by the local manual javac fallback. This is useful in
+// restricted environments where Gradle's Java 25 worker process cannot open its IPC stack.
+tasks.register('writeManualCompileInputs') {
+    def classpathFile = layout.buildDirectory.file('tmp/manual-compile-classpath.txt')
+    def sourcesFile = layout.buildDirectory.file('tmp/manual-compile-sources.txt')
+    inputs.files(sourceSets.main.allJava)
+    outputs.files(classpathFile, sourcesFile)
+    doLast {
+        classpathFile.get().asFile.text = sourceSets.main.compileClasspath.asPath
+        sourcesFile.get().asFile.text = sourceSets.main.allJava.files
+            .collect { it.absolutePath }
+            .sort()
+            .join(System.lineSeparator())
+    }
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

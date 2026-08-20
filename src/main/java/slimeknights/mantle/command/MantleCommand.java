@@ -1,0 +1,139 @@
+package slimeknights.mantle.command;
+
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.server.permissions.Permissions;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.storage.loot.LootDataType;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import slimeknights.mantle.command.argument.TagSourceArgument;
+import slimeknights.mantle.command.tags.ModifyTagCommand;
+
+import java.util.function.Consumer;
+
+/**
+ * Root command for all commands in mantle
+ */
+public class MantleCommand {
+  /** Permission level that allows a user to build in spawn protected areas */
+  public static final int PERMISSION_EDIT_SPAWN = 1;
+  /** Permission level that can run standard game commands, used by command blocks and functions */
+  public static final int PERMISSION_GAME_COMMANDS = 2;
+  /** Standard permission level for server operators */
+  public static final int PERMISSION_PLAYER_COMMANDS = 3;
+  /** Permission level for the server owner, server console, or the player in single player */
+  public static final int PERMISSION_OWNER = 4;
+
+  /** @deprecated use {@link RegistryArgument#TAG} or {@link TagSourceArgument#TAG} */
+  @Deprecated(forRemoval = true)
+  public static SuggestionProvider<CommandSourceStack> VALID_TAGS;
+  /** @deprecated use {@link RegistryArgument#VALUE} or {@link TagSourceArgument#VALUE} */
+  @Deprecated(forRemoval = true)
+  public static SuggestionProvider<CommandSourceStack> REGISTRY_VALUES;
+  /** @deprecated use {@link RegistryArgument#REGISTRY} or {@link TagSourceArgument#SOURCE} */
+  @Deprecated(forRemoval = true)
+  public static SuggestionProvider<CommandSourceStack> REGISTRY;
+
+  /** Registers all Mantle command related content */
+  public static void init() {
+    RegistryArgument.registerSuggestions();
+    VALID_TAGS = RegistryArgument.TAG;
+    REGISTRY_VALUES = RegistryArgument.VALUE;
+    REGISTRY = RegistryArgument.REGISTRY;
+    TagSourceArgument.registerSuggestions();
+
+    // register interesting sources
+    SourcesCommand.register("loot_tables", (context, builder)
+      -> SharedSuggestionProvider.suggestResource(context.getSource().getServer().reloadableRegistries().lookup().lookupOrThrow(Registries.LOOT_TABLE).listElementIds().map(ResourceKey::identifier), builder));
+    SourcesCommand.register("recipes", (context, builder)
+      -> SharedSuggestionProvider.suggestResource(context.getSource().getServer().getRecipeManager().getRecipes().stream().map(RecipeHolder::id).map(ResourceKey::identifier), builder));
+
+    // add command listener
+    NeoForge.EVENT_BUS.addListener(MantleCommand::registerCommand);
+  }
+
+  /** Registers a sub command for the root Mantle command */
+  private static void register(LiteralArgumentBuilder<CommandSourceStack> root, String name, Consumer<LiteralArgumentBuilder<CommandSourceStack>> consumer) {
+    LiteralArgumentBuilder<CommandSourceStack> subCommand = Commands.literal(name);
+    consumer.accept(subCommand);
+    root.then(subCommand);
+  }
+
+  /** Event listener to register the Mantle command */
+  private static void registerCommand(RegisterCommandsEvent event) {
+    LiteralArgumentBuilder<CommandSourceStack> builder = Commands.literal("mantle");
+    CommandBuildContext context = event.getBuildContext();
+
+    // sub commands
+    register(builder, "tags", b -> {
+      register(b, "view", ViewTagCommand::register);
+      register(b, "entries", DumpTagCommand::register);
+      register(b, "dump", DumpAllTagsCommand::register);
+      register(b, "for", TagsForCommand::register);
+      register(b, "preference", TagPreferenceCommand::register);
+      ModifyTagCommand.register(b);
+    });
+    register(builder, "dump_loot_modifiers", DumpLootModifiers::register);
+    register(builder, "remove", b -> {
+      b = b.requires(sender -> MantleCommand.hasPermission(sender, MantleCommand.PERMISSION_GAME_COMMANDS));
+      register(b, "recipes", b2 -> RemoveRecipesCommand.register(b2, context));
+      RemoveDataCommand.register(b);
+    });
+    // sources assets is registered as a client command
+    register(builder, "sources", b -> {
+      register(b, "data", SourcesCommand::register);
+    });
+    register(builder, "hunger", HungerCommand::register);
+
+    // register final command
+    event.getDispatcher().register(builder);
+  }
+
+  /* Helpers */
+
+  /**
+   * Returns true if the source either does not have reduced debug info or they have the proper level
+   * Allows limiting a command that prints debug info to not work in reduced debug info
+   * @param source             Command source
+   * @param reducedDebugLevel  Level to use when reduced debug info is true
+   * @return  True if the command can be run
+   */
+  public static boolean requiresDebugInfoOrOp(CommandSourceStack source, int reducedDebugLevel) {
+    return !source.getLevel().getGameRules().get(GameRules.REDUCED_DEBUG_INFO) || MantleCommand.hasPermission(source, reducedDebugLevel);
+  }
+
+  public static boolean hasPermission(CommandSourceStack source, int level) {
+    return hasPermission(source.permissions(), level);
+  }
+
+  /**
+   * Permission-level bridge for player-side checks.  NeoForge 26.1 moved the
+   * old integer permission helpers onto {@link PermissionSet}; keeping the
+   * level mapping here lets dependent mods use the same command permission
+   * semantics without depending on the removed Player.hasPermissions(int).
+   */
+  public static boolean hasPermission(Player source, int level) {
+    return hasPermission(source.permissions(), level);
+  }
+
+  private static boolean hasPermission(PermissionSet permissions, int level) {
+    Permission permission = switch (level) {
+      case 1 -> Permissions.COMMANDS_MODERATOR;
+      case 2 -> Permissions.COMMANDS_GAMEMASTER;
+      case 3 -> Permissions.COMMANDS_ADMIN;
+      default -> Permissions.COMMANDS_OWNER;
+    };
+    return permissions.hasPermission(permission);
+  }
+}
