@@ -38,7 +38,7 @@ public class FillFluidContainerTransfer implements IFluidContainerTransfer.WithD
 
   @Override
   public void addRepresentativeItems(Consumer<Item> consumer) {
-    input.getValues().stream().map(net.minecraft.core.Holder::value).forEach(consumer);
+    IFluidContainerTransfer.addIngredientItems(input, consumer);
   }
 
   @Override

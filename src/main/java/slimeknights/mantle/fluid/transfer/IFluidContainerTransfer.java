@@ -1,8 +1,11 @@
 package slimeknights.mantle.fluid.transfer;
 
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.core.Holder;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import slimeknights.mantle.data.gson.GenericRegisteredSerializer.IJsonSerializable;
@@ -14,6 +17,18 @@ import java.util.function.Consumer;
 /** Interface for transferring fluid either to or from an item */
 @SuppressWarnings("removal") // Legacy fluid handler API retained for TConstruct 26.1 compatibility.
 public interface IFluidContainerTransfer extends IJsonSerializable {
+  /**
+   * Adds every item an ingredient may accept without assuming it has a vanilla holder set.
+   * Custom ingredients deliberately reject {@link Ingredient#getValues()}, so their own
+   * representative item stream must be used instead.
+   */
+  static void addIngredientItems(Ingredient ingredient, Consumer<Item> consumer) {
+    ICustomIngredient custom = ingredient.getCustomIngredient();
+    (custom == null ? ingredient.getValues().stream() : custom.items())
+      .map(Holder::value)
+      .forEach(consumer);
+  }
+
   /** Adds any items matched by this recipe for the sake of enabling transfer client side */
   void addRepresentativeItems(Consumer<Item> consumer);
 
