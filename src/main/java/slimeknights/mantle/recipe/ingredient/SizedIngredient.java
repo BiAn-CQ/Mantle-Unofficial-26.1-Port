@@ -2,8 +2,6 @@ package slimeknights.mantle.recipe.ingredient;
 
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.core.HolderSet;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
@@ -97,10 +95,9 @@ public class SizedIngredient implements Predicate<ItemStack> {
    * @return  Sized ingredient matching any size
    */
   public static SizedIngredient fromTag(TagKey<Item> tag, int amountNeeded) {
-    // Tags are not bound while item classes are being initialized.  Keep the
-    // named holder set lazy so static recipe ingredients can be created before
-    // the registry tag manager is ready.
-    return of(Ingredient.of(HolderSet.emptyNamed(BuiltInRegistries.ITEM, tag)), amountNeeded);
+    // Resolve through the live tag manager. Construction-time named holder
+    // sets cannot be enumerated while client book data is being prepared.
+    return of(ItemTagIngredient.of(tag), amountNeeded);
   }
 
   /**
