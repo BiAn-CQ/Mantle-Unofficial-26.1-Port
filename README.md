@@ -28,7 +28,7 @@ Linux/macOS：
 
 ## 上游与问题反馈
 
-本项目基于 [SlimeKnights/Mantle](https://github.com/SlimeKnights/Mantle) 移植，
+本项目基于 [SlimeKnights/Mantle](https://github.com/SlimeKnights/Mantle)和[zhuchuovo/Mantle-1.21.1](https://github.com/zhuchuovo/Mantle-1.21.1)) 移植，
 不是 SlimeKnights 官方发布。请不要将本移植版的问题提交到上游仓库。
 
 反馈问题时请附上 Minecraft、NeoForge、Mantle 和本模组的版本，以及复现步骤、 相关日志和截图。
