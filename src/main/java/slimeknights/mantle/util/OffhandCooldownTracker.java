@@ -16,8 +16,8 @@ import slimeknights.mantle.network.packet.SwingArmPacket;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
 
 /**
  * Logic to handle offhand having its own cooldown
@@ -33,7 +33,12 @@ public class OffhandCooldownTracker {
    * Capability instance for offhand cooldown
    */
   public static final EntityCapability<OffhandCooldownTracker,Void> CAPABILITY = EntityCapability.createVoid(KEY, OffhandCooldownTracker.class);
-  private static final Map<Player,OffhandCooldownTracker> TRACKERS = Collections.synchronizedMap(new WeakHashMap<>());
+  /**
+   * Track logical players by object identity. Minecraft entities compare by numeric entity ID, so
+   * the client and server player in an integrated server can compare equal despite being different
+   * logical entities. An equality-based map lets the client reset the server attack cooldown.
+   */
+  private static final Map<Player,OffhandCooldownTracker> TRACKERS = Collections.synchronizedMap(new IdentityHashMap<>());
 
   /** Registers the capability and subscribes to event listeners */
   public static void init() {
@@ -41,7 +46,17 @@ public class OffhandCooldownTracker {
 
   /** Registers the capability with the event bus */
   public static void register(RegisterCapabilitiesEvent event) {
-    event.registerEntity(CAPABILITY, EntityType.PLAYER, (player, context) -> TRACKERS.computeIfAbsent(player, OffhandCooldownTracker::new));
+    event.registerEntity(CAPABILITY, EntityType.PLAYER, (player, context) -> getOrCreate(player));
+  }
+
+  /** Gets the tracker for one logical player identity. */
+  static OffhandCooldownTracker getOrCreate(Player player) {
+    return TRACKERS.computeIfAbsent(player, OffhandCooldownTracker::new);
+  }
+
+  /** Removes a player tracker when its logical entity leaves a level. */
+  public static void clear(Player player) {
+    TRACKERS.remove(player);
   }
 
   /** Player receiving cooldowns */

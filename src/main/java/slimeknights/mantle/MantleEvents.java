@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -18,6 +19,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import slimeknights.mantle.datagen.MantleTags;
+import slimeknights.mantle.util.OffhandCooldownTracker;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,6 +29,14 @@ import java.util.List;
 /** Handles events for any Mantle driven logic. */
 @EventBusSubscriber(modid = Mantle.modId)
 public class MantleEvents {
+  /** Drops identity-keyed runtime state when either logical player leaves its level. */
+  @SubscribeEvent
+  static void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+    if (event.getEntity() instanceof Player player) {
+      OffhandCooldownTracker.clear(player);
+    }
+  }
+
   /* Soulbound */
   /**
    * NBT key for items to preserve their slot in soulbound. Applied to items tagged {@link MantleTags.Items#SOULBOUND}.
