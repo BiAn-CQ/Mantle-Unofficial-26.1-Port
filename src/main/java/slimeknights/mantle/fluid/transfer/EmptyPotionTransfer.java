@@ -19,7 +19,7 @@ import slimeknights.mantle.recipe.helper.FluidOutput;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.mantle.recipe.helper.TagPreference;
 
-/** Fluid transfer info that empties a fluid from a potion item, but empties water if its the water potion */
+/** Fluid transfer info that empties a fluid from a potion item, but empties water if it's the water potion */
 public class EmptyPotionTransfer extends EmptyFluidContainerTransfer {
   public static final Identifier ID = Mantle.getResource("empty_potion");
   /** Unique loader instance */
@@ -48,7 +48,13 @@ public class EmptyPotionTransfer extends EmptyFluidContainerTransfer {
     }
     // if it's not water, we need a potion fluid to return anything
     return TagPreference.getPreference(MantleTags.Fluids.POTION)
-      .map(value -> new FluidStack(value, fluid.getAmount()))
+      .map(value -> {
+        FluidStack result = new FluidStack(value, fluid.getAmount());
+        if (!stack.isComponentsPatchEmpty()) {
+          result.applyComponents(stack.getComponentsPatch());
+        }
+        return result;
+      })
       .orElse(FluidStack.EMPTY);
   }
 
