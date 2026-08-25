@@ -14,7 +14,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.block.entity.IRetexturedBlockEntity;
-import slimeknights.mantle.util.BlockEntityHelper;
 import slimeknights.mantle.util.RetexturedHelper;
 
 import javax.annotation.Nullable;
@@ -50,8 +49,8 @@ public abstract class RetexturedBlock extends Block implements EntityBlock {
    * @param stack Item stack
    */
   public static void updateTextureBlock(Level world, BlockPos pos, ItemStack stack) {
-    if (stack.has(DataComponents.CUSTOM_DATA)) {
-      BlockEntityHelper.get(IRetexturedBlockEntity.class, world, pos).ifPresent(te -> te.updateTexture(RetexturedHelper.getTextureName(stack)));
+    if (stack.has(DataComponents.CUSTOM_DATA) && world.getBlockEntity(pos) instanceof IRetexturedBlockEntity te) {
+      te.updateTexture(RetexturedHelper.getTextureName(stack));
     }
   }
 
@@ -65,7 +64,9 @@ public abstract class RetexturedBlock extends Block implements EntityBlock {
   public static ItemStack getPickBlock(BlockGetter world, BlockPos pos, BlockState state) {
     Block block = state.getBlock();
     ItemStack stack = new ItemStack(block);
-    BlockEntityHelper.get(IRetexturedBlockEntity.class, world, pos).ifPresent(te -> RetexturedHelper.setTexture(stack, te.getTextureName()));
+    if (world.getBlockEntity(pos) instanceof IRetexturedBlockEntity te) {
+      RetexturedHelper.setTexture(stack, te.getTextureName());
+    }
     return stack;
   }
 }

@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import slimeknights.mantle.Mantle;
 import slimeknights.mantle.client.book.BookHelper;
 import slimeknights.mantle.util.BlockEntityHelper;
 
@@ -38,12 +39,18 @@ public class UpdateLecternPagePacket implements IThreadsafePacket {
     Player player = context.player();
     if (this.page != null) {
       Level world = player.level();
-      BlockEntityHelper.get(LecternBlockEntity.class, world, this.pos).ifPresent(te -> {
-        ItemStack stack = te.getBook();
-        if (!stack.isEmpty()) {
-          BookHelper.writeSavedPageToBook(stack, this.page);
+      if (BlockEntityHelper.isBlockLoaded(world, pos)) {
+        if (world.getBlockEntity(pos) instanceof LecternBlockEntity te) {
+          ItemStack stack = te.getBook();
+          if (!stack.isEmpty()) {
+            BookHelper.writeSavedPageToBook(stack, this.page);
+          }
+        } else {
+          Mantle.logger.error("Failed to find lectern at {} to update page for {}.", pos, player.getScoreboardName());
         }
-      });
+      } else {
+        Mantle.logger.error("Attempted to update lectern page at {} for {}, but world is not loaded", pos, player.getScoreboardName());
+      }
     }
   }
 }
