@@ -27,7 +27,10 @@ import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.client.model.ExtraFaceData;
 import org.joml.Matrix4fc;
 import org.jspecify.annotations.Nullable;
+import slimeknights.mantle.client.model.util.MantleItemLayerGenerator;
+import slimeknights.mantle.util.ItemLayerPixels;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -86,10 +89,10 @@ public final class NativeMantleItemModel implements ItemModel {
       baker, parent, parent.getTopTextureSlots());
     QuadCollection.Builder quads = new QuadCollection.Builder();
     Material.Baked particle = parentProperties.particleMaterial();
+    List<BakedLayer> bakedLayers = new ArrayList<>();
 
-    // Keep the legacy layer order.  The vanilla generator handles transparent
-    // edges and animated sprites, while ExtraFaceData bakes static color and
-    // luminosity directly into the new quad format.
+    // Resolve layers in display order, then bake them from top to bottom so the
+    // legacy pixel map can suppress only side faces hidden by a higher layer.
     for (int index = 0; index < ItemModelGenerator.LAYERS.size(); index++) {
       String layerName = ItemModelGenerator.LAYERS.get(index);
       Material base = textures.get(layerName);
@@ -103,16 +106,28 @@ public final class NativeMantleItemModel implements ItemModel {
       LayerData data = index < layers.size() ? layers.get(index) : LayerData.DEFAULT;
       int color = data.color() == -1 ? 0xFFFFFFFF : data.color();
       int layerIndex = data.noTint() ? -1 : index;
-      QuadCollection generated = baker.compute(new ItemModelGenerator.ItemLayerKey(
-        rendered, BlockModelRotation.IDENTITY, layerIndex,
+      bakedLayers.add(new BakedLayer(rendered, layerIndex,
         new ExtraFaceData(color, data.luminosity(), true)));
-      generated.getAll().forEach(quads::addUnculledFace);
     }
+
+    ItemLayerPixels usedPixels = bakedLayers.size() > 1 ? new ItemLayerPixels() : null;
+    List<QuadCollection> generatedLayers = new ArrayList<>(bakedLayers.size());
+    for (int index = 0; index < bakedLayers.size(); index++) {
+      generatedLayers.add(QuadCollection.EMPTY);
+    }
+    for (int index = bakedLayers.size() - 1; index >= 0; index--) {
+      BakedLayer layer = bakedLayers.get(index);
+      generatedLayers.set(index, MantleItemLayerGenerator.bake(
+        baker, layer.material(), BlockModelRotation.IDENTITY, layer.tintIndex(), layer.faceData(), usedPixels));
+    }
+    generatedLayers.forEach(layer -> layer.getAll().forEach(quads::addUnculledFace));
 
     ModelRenderProperties properties = new ModelRenderProperties(
       parentProperties.usesBlockLight(), particle, parentProperties.transforms());
     return new CuboidItemModelWrapper(List.of(), quads.build(), properties, transformation);
   }
+
+  private record BakedLayer(Material.Baked material, int tintIndex, ExtraFaceData faceData) {}
 
   private static final class DynamicNbtModel implements ItemModel {
     private final String nbtKey;
