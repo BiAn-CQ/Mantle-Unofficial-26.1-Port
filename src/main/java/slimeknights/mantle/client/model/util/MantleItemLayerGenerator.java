@@ -1,5 +1,6 @@
 package slimeknights.mantle.client.model.util;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.platform.Transparency;
 import com.mojang.math.Quadrant;
 import net.minecraft.client.renderer.block.dispatch.ModelState;
@@ -11,6 +12,7 @@ import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.client.resources.model.geometry.QuadCollection;
 import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.core.Direction;
+import net.minecraft.util.ARGB;
 import net.neoforged.neoforge.client.model.ExtraFaceData;
 import org.joml.Vector3f;
 import org.jspecify.annotations.Nullable;
@@ -30,6 +32,8 @@ public final class MantleItemLayerGenerator {
   private static final float MIN_Z = 7.5f;
   private static final float MAX_Z = 8.5f;
   private static final float UV_EPSILON = 0.01f;
+  /** Matches the 1.20.1 item-layer cutoff: alpha values at or below 10% are transparent. */
+  private static final int ALPHA_CUTOFF = 25;
   private static final Direction[] HORIZONTAL_FACES = {Direction.UP, Direction.DOWN};
   private static final Direction[] VERTICAL_FACES = {Direction.WEST, Direction.EAST};
 
@@ -85,7 +89,7 @@ public final class MantleItemLayerGenerator {
     sprite.getUniqueFrames().forEach(frame -> {
       for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-          if (!sprite.isTransparent(frame, x, y)) {
+          if (!isTransparent(sprite, frame, x, y)) {
             setIfTransparent(faces, Direction.UP, sprite, frame, x, y, x, y - 1, width, height);
             setIfTransparent(faces, Direction.DOWN, sprite, frame, x, y, x, y + 1, width, height);
             setIfTransparent(faces, Direction.WEST, sprite, frame, x, y, x - 1, y, width, height);
@@ -101,9 +105,27 @@ public final class MantleItemLayerGenerator {
                                        SpriteContents sprite, int frame, int x, int y,
                                        int adjacentX, int adjacentY, int width, int height) {
     if (adjacentX < 0 || adjacentY < 0 || adjacentX >= width || adjacentY >= height
-        || sprite.isTransparent(frame, adjacentX, adjacentY)) {
+        || isTransparent(sprite, frame, adjacentX, adjacentY)) {
       faces.get(direction).set(y * width + x);
     }
+  }
+
+  /**
+   * Checks the source frame directly because Minecraft's 26.1 helper only
+   * treats fully transparent pixels as empty, while Mantle historically used
+   * a 10% alpha cutoff for both side faces and cross-layer suppression.
+   */
+  private static boolean isTransparent(SpriteContents sprite, int frame, int x, int y) {
+    NativeImage image = sprite.originalImage;
+    int frameX = 0;
+    int frameY = 0;
+    if (sprite.isAnimated()) {
+      int frameRowSize = image.getWidth() / sprite.width();
+      frameX = frame % frameRowSize;
+      frameY = frame / frameRowSize;
+    }
+    int pixel = image.getPixel(frameX * sprite.width() + x, frameY * sprite.height() + y);
+    return ARGB.alpha(pixel) <= ALPHA_CUTOFF;
   }
 
   private static void addHorizontalFaces(QuadCollection.Builder quads, ModelBaker.Interner interner,
@@ -213,7 +235,7 @@ public final class MantleItemLayerGenerator {
     }
     for (int y = 0; y < height; y++) {
       for (int x = 0; x < width; x++) {
-        if (!sprite.isTransparent(0, x, y)) {
+        if (!isTransparent(sprite, 0, x, y)) {
           usedPixels.set(x, y, width, height);
         }
       }
