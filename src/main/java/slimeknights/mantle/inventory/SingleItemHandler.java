@@ -1,5 +1,6 @@
 package slimeknights.mantle.inventory;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.item.ItemStack;
@@ -48,7 +49,7 @@ public abstract class SingleItemHandler<T extends MantleBlockEntity> extends Ite
 
   @Override
   protected int getCapacity(int index, ItemResource resource) {
-    return maxStackSize;
+    return resource.isEmpty() ? maxStackSize : Math.min(maxStackSize, resource.getMaxStackSize());
   }
 
   @Override
@@ -65,8 +66,8 @@ public abstract class SingleItemHandler<T extends MantleBlockEntity> extends Ite
    * Writes this module to NBT
    * @return  Module in NBT
    */
-  public CompoundTag writeToNBT() {
-    return (CompoundTag)ItemStack.OPTIONAL_CODEC.encodeStart(NbtOps.INSTANCE, stacks.getFirst())
+  public CompoundTag writeToNBT(HolderLookup.Provider provider) {
+    return (CompoundTag)ItemStack.OPTIONAL_CODEC.encodeStart(provider.createSerializationContext(NbtOps.INSTANCE), stacks.getFirst())
       .getOrThrow(IllegalStateException::new);
   }
 
@@ -74,8 +75,8 @@ public abstract class SingleItemHandler<T extends MantleBlockEntity> extends Ite
    * Reads this module from NBT
    * @param nbt  NBT
    */
-  public void readFromNBT(CompoundTag nbt) {
-    stacks.set(0, ItemStack.OPTIONAL_CODEC.parse(NbtOps.INSTANCE, nbt)
+  public void readFromNBT(HolderLookup.Provider provider, CompoundTag nbt) {
+    stacks.set(0, ItemStack.OPTIONAL_CODEC.parse(provider.createSerializationContext(NbtOps.INSTANCE), nbt)
       .getOrThrow(IllegalStateException::new));
   }
 }
