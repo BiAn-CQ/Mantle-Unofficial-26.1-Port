@@ -3,30 +3,26 @@ package slimeknights.mantle.inventory;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
+import net.neoforged.neoforge.transfer.IndexModifier;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
-
-import javax.annotation.Nonnull;
 
 /**
  * Item handler containing exactly one item.
  */
-@SuppressWarnings({"unused", "removal"}) // Legacy item handler API retained for TConstruct 26.1 compatibility.
-public abstract class SingleItemHandler<T extends MantleBlockEntity> implements IItemHandlerModifiable {
+public abstract class SingleItemHandler<T extends MantleBlockEntity> extends ItemStacksResourceHandler implements IndexModifier<ItemResource> {
   protected final T parent;
   private final int maxStackSize;
 
-  /** Current item in this slot */
-  private ItemStack stack = ItemStack.EMPTY;
-
   protected SingleItemHandler(T parent, int maxStackSize) {
+    super(1);
     this.parent = parent;
     this.maxStackSize = maxStackSize;
   }
 
   public ItemStack getStack() {
-    return stack;
+    return stacks.getFirst();
   }
 
   /**
@@ -34,8 +30,7 @@ public abstract class SingleItemHandler<T extends MantleBlockEntity> implements 
    * @param newStack  New stack
    */
   public void setStack(ItemStack newStack) {
-    this.stack = newStack;
-    parent.setChangedFast();
+    set(0, ItemResource.of(newStack), newStack.getCount());
   }
 
   /**
@@ -46,100 +41,24 @@ public abstract class SingleItemHandler<T extends MantleBlockEntity> implements 
   protected abstract boolean isItemValid(ItemStack stack);
 
 
-  /* Properties */
-
   @Override
-  public boolean isItemValid(int slot, ItemStack stack) {
-    return slot == 0 && isItemValid(stack);
+  public boolean isValid(int index, ItemResource resource) {
+    return index == 0 && !resource.isEmpty() && isItemValid(resource.toStack());
   }
 
   @Override
-  public int getSlots() {
-    return 1;
-  }
-
-  @Override
-  public int getSlotLimit(int slot) {
+  protected int getCapacity(int index, ItemResource resource) {
     return maxStackSize;
   }
 
-  @Nonnull
   @Override
-  public ItemStack getStackInSlot(int slot) {
-    if (slot == 0) {
-      return stack;
-    }
-    return ItemStack.EMPTY;
+  protected void onContentsChanged(int index, ItemStack previousContents) {
+    parent.setChangedFast();
+    onStackChanged(previousContents, stacks.get(index));
   }
 
-
-  /* Interaction */
-
-  @Override
-  public void setStackInSlot(int slot, ItemStack stack) {
-    if (slot == 0) {
-      setStack(stack);
-    }
-  }
-  
-  @Nonnull
-  @Override
-  public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-    if (stack.isEmpty()) {
-      return ItemStack.EMPTY;
-    }
-    if (slot == 0) {
-      ItemStack current = getStack();
-      if (current.isEmpty()) {
-        if (this.isItemValid(slot, stack)) {
-          // insert up to the stack limit
-          int size = Math.min(stack.getCount(), getSlotLimit(0));
-          if (!simulate) {
-            this.setStack(stack.copyWithCount(size));
-          }
-          return stack.copyWithCount(stack.getCount() - size);
-        }
-      } else if (ItemStack.isSameItemSameComponents(current, stack)) {
-        // increase up to the stack limit
-        int added = Math.min(stack.getCount(), getSlotLimit(0) - current.getCount());
-        if (added > 0) {
-          if (!simulate) {
-            current.grow(added);
-            setStack(current);
-          }
-          return stack.copyWithCount(stack.getCount() - added);
-        }
-      }
-    }
-    return stack;
-  }
-
-  @Nonnull
-  @Override
-  public ItemStack extractItem(int slot, int amount, boolean simulate) {
-    if (amount == 0 || slot != 0) {
-      return ItemStack.EMPTY;
-    }
-    if (stack.isEmpty()) {
-      return ItemStack.EMPTY;
-    }
-
-    // if amount is less than our size, need to do some shrinking
-    if (amount < stack.getCount()) {
-      ItemStack result = stack.copyWithCount(amount);
-      if (!simulate) {
-        setStack(stack.copyWithCount(stack.getCount() - amount));
-      }
-      return result;
-    }
-    // equal to or bigger means we give them our stack directly
-    if (simulate) {
-      return stack.copy();
-    } else {
-      ItemStack ret = stack;
-      setStack(ItemStack.EMPTY);
-      return ret;
-    }
+  /** Called after the stored stack changes through either direct mutation or a transaction. */
+  protected void onStackChanged(ItemStack previousStack, ItemStack newStack) {
   }
 
   /**
@@ -147,7 +66,7 @@ public abstract class SingleItemHandler<T extends MantleBlockEntity> implements 
    * @return  Module in NBT
    */
   public CompoundTag writeToNBT() {
-    return (CompoundTag)ItemStack.OPTIONAL_CODEC.encodeStart(NbtOps.INSTANCE, stack)
+    return (CompoundTag)ItemStack.OPTIONAL_CODEC.encodeStart(NbtOps.INSTANCE, stacks.getFirst())
       .getOrThrow(IllegalStateException::new);
   }
 
@@ -156,7 +75,7 @@ public abstract class SingleItemHandler<T extends MantleBlockEntity> implements 
    * @param nbt  NBT
    */
   public void readFromNBT(CompoundTag nbt) {
-    stack = ItemStack.OPTIONAL_CODEC.parse(NbtOps.INSTANCE, nbt)
-      .getOrThrow(IllegalStateException::new);
+    stacks.set(0, ItemStack.OPTIONAL_CODEC.parse(NbtOps.INSTANCE, nbt)
+      .getOrThrow(IllegalStateException::new));
   }
 }

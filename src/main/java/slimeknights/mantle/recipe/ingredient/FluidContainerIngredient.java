@@ -11,17 +11,23 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.material.Fluid;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.neoforged.neoforge.common.crafting.IngredientType;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidType;
-import net.neoforged.neoforge.fluids.FluidUtil;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.access.ItemAccess;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.fluid.FluidUtil;
+import net.neoforged.neoforge.transfer.item.VanillaContainerWrapper;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.jspecify.annotations.Nullable;
 import slimeknights.mantle.data.JsonCodec;
 import slimeknights.mantle.registration.object.FluidObject;
@@ -32,7 +38,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /** Ingredient that matches a container of fluid */
-@SuppressWarnings({"unused", "removal"}) // Legacy fluid handler API retained for TConstruct 26.1 compatibility.
+@SuppressWarnings("unused")
 public final class FluidContainerIngredient implements ICustomIngredient {
   private static final Codec<FluidContainerIngredient> CODEC = new JsonCodec<>() {
     @Override
@@ -115,25 +121,26 @@ public final class FluidContainerIngredient implements ICustomIngredient {
     if (stack.isEmpty()) {
       return false;
     }
-    return FluidUtil.getFluidHandler(stack).flatMap(capability -> {
-      // second, must contain enough fluid
-      if (capability.getTanks() == 1) {
-        FluidStack contained = capability.getFluidInTank(0);
-        if (!contained.isEmpty()
-          && fluidIngredient.getAmount(contained.getFluid()) == contained.getAmount()
-          && fluidIngredient.test(contained.getFluid())) {
-          return FluidUtil.getFluidHandler(stack.copyWithCount(1));
-        }
+    SimpleContainer container = new SimpleContainer(stack.copyWithCount(1));
+    ItemAccess access = ItemAccess.forHandlerIndexStrict(VanillaContainerWrapper.of(container), 0);
+    ResourceHandler<FluidResource> handler = access.getCapability(Capabilities.Fluid.ITEM);
+    if (handler == null || handler.size() != 1) {
+      return false;
+    }
+    FluidStack contained = FluidUtil.getStack(handler, 0);
+    Fluid fluid = contained.getFluid();
+    int amount = fluidIngredient.getAmount(fluid);
+    if (contained.isEmpty() || amount != contained.getAmount() || !fluidIngredient.test(fluid)) {
+      return false;
+    }
+    try (Transaction transaction = Transaction.openRoot()) {
+      int drained = handler.extract(0, FluidResource.of(contained), amount, transaction);
+      if (drained != amount) {
+        return false;
       }
-      return Optional.empty();
-    }).filter(capability -> {
-      // alright, we know it has the fluid, the question is just whether draining the fluid will give us the desired result
-      Fluid fluid = capability.getFluidInTank(0).getFluid();
-      int amount = fluidIngredient.getAmount(fluid);
-      FluidStack drained = capability.drain(amount, IFluidHandler.FluidAction.EXECUTE);
-      return drained.getFluid() == fluid && drained.getAmount() == amount
-        && ItemStack.matches(capability.getContainer(), stack.getCraftingRemainder());
-    }).isPresent();
+      transaction.commit();
+    }
+    return ItemStack.matches(container.getItem(0), stack.getCraftingRemainder());
   }
 
   @Override
@@ -170,17 +177,9 @@ public final class FluidContainerIngredient implements ICustomIngredient {
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   private static Ingredient parseIngredient(JsonElement element, DynamicOps<?> ops) {
-    try {
-      DynamicOps rawOps = ops;
-      Object input = JsonOps.INSTANCE.convertTo(rawOps, element);
-      return (Ingredient)Ingredient.CODEC.parse(rawOps, input).getOrThrow();
-    } catch (RuntimeException exception) {
-      if (element.isJsonObject() && element.getAsJsonObject().has("item")) {
-        JsonElement item = element.getAsJsonObject().get("item");
-        return parseIngredient(item, ops);
-      }
-      throw exception;
-    }
+    DynamicOps rawOps = ops;
+    Object input = JsonOps.INSTANCE.convertTo(rawOps, element);
+    return (Ingredient)Ingredient.CODEC.parse(rawOps, input).getOrThrow();
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

@@ -4,30 +4,25 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.Codec;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStackTemplate;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.tags.TagKey;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import slimeknights.mantle.data.loadable.LoadableCodec;
 import slimeknights.mantle.data.loadable.Loadables;
-import slimeknights.mantle.data.loadable.common.ItemStackLoadable;
 import slimeknights.mantle.data.loadable.common.ItemStackTemplateLoadable;
-import slimeknights.mantle.data.loadable.common.NBTLoadable;
+import slimeknights.mantle.data.loadable.common.RegistryCodecLoadable;
 import slimeknights.mantle.data.loadable.field.LoadableField;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.typed.TypedMap;
 
 import javax.annotation.Nullable;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -39,6 +34,8 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
   /* Codecs - just adding these as needed */
   /** Codec for an output that may not be empty with any size */
   public static Codec<ItemOutput> REQUIRED_STACK_CODEC = new LoadableCodec<>(Loadable.REQUIRED_STACK);
+  private static final slimeknights.mantle.data.loadable.Loadable<DataComponentPatch> COMPONENTS =
+    new RegistryCodecLoadable<>(DataComponentPatch.CODEC, DataComponentPatch.STREAM_CODEC);
   public static final StreamCodec<RegistryFriendlyByteBuf, ItemOutput> STREAM_CODEC =
     ItemStack.OPTIONAL_STREAM_CODEC.map(ItemOutput::fromStack, ItemOutput::get);
 
@@ -131,11 +128,11 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
    * Creates a new output for the given tag
    * @param tag   Tag
    * @param count Stack count
-   * @param nbt   Stack NBT
+   * @param components Stack components
    * @return Output
    */
-  public static ItemOutput fromTag(TagKey<Item> tag, int count, @Nullable CompoundTag nbt) {
-    return new OfTagPreference(tag, count, nbt);
+  public static ItemOutput fromTag(TagKey<Item> tag, int count, DataComponentPatch components) {
+    return new OfTagPreference(tag, count, components);
   }
 
   /**
@@ -145,7 +142,7 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
    * @return Output
    */
   public static ItemOutput fromTag(TagKey<Item> tag, int count) {
-    return fromTag(tag, count, null);
+    return fromTag(tag, count, DataComponentPatch.EMPTY);
   }
 
   /**
@@ -205,15 +202,8 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public JsonElement serialize(boolean writeCount) {
-      JsonElement item = Loadables.ITEM.serialize(this.item);
-      if (writeCount && count > 1) {
-        JsonObject json = new JsonObject();
-        json.add("item", item);
-        json.addProperty("count", count);
-        return json;
-      } else {
-        return item;
-      }
+      return ItemStackTemplateLoadable.STACK.serialize(
+        new ItemStackTemplate(item, writeCount ? count : 1, DataComponentPatch.EMPTY));
     }
   }
 
@@ -242,10 +232,8 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public JsonElement serialize(boolean writeCount) {
-      if (writeCount) {
-        return ItemStackLoadable.OPTIONAL_STACK_NBT.serialize(stack);
-      }
-      return ItemStackLoadable.OPTIONAL_ITEM_NBT.serialize(stack);
+      return ItemStackTemplateLoadable.STACK.serialize(
+        new ItemStackTemplate(stack.getItem(), writeCount ? stack.getCount() : 1, stack.getComponentsPatch()));
     }
   }
 
@@ -278,22 +266,7 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public JsonElement serialize(boolean writeCount) {
-      JsonElement item = Loadables.ITEM.serialize(template.item().value());
-      CompoundTag nbt = template.components().getPatch(DataComponents.CUSTOM_DATA) == null
-        ? null
-        : template.components().getPatch(DataComponents.CUSTOM_DATA).flatMap(data -> Optional.of(data.copyTag())).orElse(null);
-      if (!writeCount && nbt == null) {
-        return item;
-      }
-      JsonObject json = new JsonObject();
-      json.add("item", item);
-      if (writeCount && template.count() > 1) {
-        json.addProperty("count", template.count());
-      }
-      if (nbt != null) {
-        json.add("nbt", NBTLoadable.ALLOW_STRING.serialize(nbt));
-      }
-      return json;
+      return ItemStackTemplateLoadable.STACK.serialize(writeCount ? template : template.withCount(1));
     }
   }
 
@@ -301,14 +274,13 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
   private static class OfTagPreference extends ItemOutput {
     private final TagKey<Item> tag;
     private final int count;
-    @Nullable
-    private final CompoundTag nbt;
+    private final DataComponentPatch components;
     private ItemStack cachedResult = null;
 
-    private OfTagPreference(TagKey<Item> tag, int count, @Nullable CompoundTag nbt) {
+    private OfTagPreference(TagKey<Item> tag, int count, DataComponentPatch components) {
       this.tag = tag;
       this.count = count;
-      this.nbt = nbt;
+      this.components = components;
     }
 
     @Override
@@ -333,10 +305,7 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
         if (preference.isEmpty()) {
           return ItemStack.EMPTY;
         }
-        cachedResult = new ItemStack(preference.orElseThrow(), count);
-        if (nbt != null) {
-          cachedResult.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt.copy()));
-        }
+        cachedResult = new ItemStackTemplate(preference.orElseThrow(), count, components).create();
       }
       return cachedResult;
     }
@@ -350,8 +319,8 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
       if (writeCount) {
         json.addProperty("count", count);
       }
-      if (count > 0 && nbt != null) {
-        json.add("nbt", NBTLoadable.ALLOW_STRING.serialize(nbt));
+      if (count > 0 && !components.isEmpty()) {
+        json.add("components", COMPONENTS.serialize(components));
       }
       return json;
     }
@@ -370,17 +339,11 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     private final boolean nonEmpty;
     private final boolean readCount;
-    private final RecordLoadable<ItemStackTemplate> stack;
+    private final slimeknights.mantle.data.loadable.Loadable<ItemStackTemplate> stack;
     Loadable(boolean nonEmpty, boolean readCount) {
       this.nonEmpty = nonEmpty;
       this.readCount = readCount;
-      // figure out the stack serializer to use based on the two parameters
-      // we always do NBT, just those that vary
-      if (nonEmpty) {
-        this.stack = readCount ? ItemStackTemplateLoadable.STACK_NBT : ItemStackTemplateLoadable.ITEM_NBT;
-      } else {
-        this.stack = readCount ? ItemStackTemplateLoadable.STACK_NBT : ItemStackTemplateLoadable.ITEM_NBT;
-      }
+      this.stack = ItemStackTemplateLoadable.STACK;
     }
 
     @Override
@@ -392,32 +355,18 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
         if (readCount) {
           count = IntLoadable.FROM_ONE.getOrDefault(json, "count", 1, context);
         }
-        return fromTag(tag, count, NBTLoadable.ALLOW_STRING.getOrDefault(json, "nbt", null));
+        return fromTag(tag, count, COMPONENTS.getOrDefault(json, "components", DataComponentPatch.EMPTY, context));
       }
-      return fromTemplate(stack.deserialize(json, context));
-    }
-
-    @Override
-    public ItemOutput convert(JsonElement element, String key, TypedMap context) {
-      // if it's a primitive, parse it directly with the stack logic
-      // that handles single items and ensures both count and non-empty
-      if (element.isJsonPrimitive()) {
-        return fromTemplate(stack.convert(element, key, context));
+      ItemStackTemplate template = stack.convert(json, "item output", context);
+      if (!readCount && template.count() != 1) {
+        throw new IllegalArgumentException("Item output for this recipe must have a count of 1");
       }
-      return deserialize(GsonHelper.convertToJsonObject(element, key), context);
+      return fromTemplate(template);
     }
 
     @Override
     public void serialize(ItemOutput object, JsonObject json) {
-      JsonElement element = serialize(object);
-      if (element.isJsonObject()) {
-        for (Entry<String,JsonElement> entry : element.getAsJsonObject().entrySet()) {
-          json.add(entry.getKey(), entry.getValue());
-        }
-      } else {
-        // if its a primitive, it must be the item field, so add that directly
-        json.add("item", element);
-      }
+      serialize(object).getAsJsonObject().entrySet().forEach(entry -> json.add(entry.getKey(), entry.getValue()));
     }
 
     @Override

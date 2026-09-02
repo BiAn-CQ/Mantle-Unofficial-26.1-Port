@@ -18,8 +18,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import com.mojang.serialization.DynamicOps;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.wrapper.InvWrapper;
 import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.neoforged.neoforge.transfer.item.VanillaContainerWrapper;
@@ -27,7 +25,6 @@ import slimeknights.mantle.util.ItemStackList;
 
 
 // Updated version of InventoryLogic in Mantle. Also contains a few bugfixes DOES NOT OVERRIDE createMenu
-@SuppressWarnings("removal") // Legacy item handler API retained for TConstruct 26.1 compatibility.
 public abstract class InventoryBlockEntity extends NameableBlockEntity implements Container, MenuProvider, Nameable {
   private static final String TAG_INVENTORY_SIZE = "InventorySize";
   private static final String TAG_ITEMS = "Items";
@@ -38,12 +35,7 @@ public abstract class InventoryBlockEntity extends NameableBlockEntity implement
   private final boolean saveSizeToNBT;
   protected int stackSizeLimit;
   @Getter
-  protected IItemHandlerModifiable itemHandler;
-  protected ResourceHandler<ItemResource> transferItemHandler;
-
-  public ResourceHandler<ItemResource> getTransferItemHandler() {
-    return transferItemHandler;
-  }
+  protected ResourceHandler<ItemResource> itemHandler;
 
   /**
    * @param name Localization String for the inventory title. Can be overridden through setCustomName
@@ -60,8 +52,7 @@ public abstract class InventoryBlockEntity extends NameableBlockEntity implement
     this.saveSizeToNBT = saveSizeToNBT;
     this.inventory = NonNullList.withSize(inventorySize, ItemStack.EMPTY);
     this.stackSizeLimit = maxStackSize;
-    this.itemHandler = new InvWrapper(this);
-    this.transferItemHandler = VanillaContainerWrapper.of(this);
+    this.itemHandler = VanillaContainerWrapper.of(this);
   }
 
   /* Inventory management */

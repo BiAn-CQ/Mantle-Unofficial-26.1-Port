@@ -60,8 +60,8 @@ public class ContainsItemModifierLootCondition implements ILootModifierCondition
     if (ingredientJson == null) {
       throw new JsonParseException("Missing ingredient in contains-item loot modifier condition");
     }
-    // 26.1 serializes a tag ingredient as the compact "#namespace:tag"
-    // string. IngredientLoadable accepts both that form and legacy objects.
+    // Decode through the native 26.1 Ingredient codec, including registered
+    // NeoForge custom ingredients used for tags that may be absent.
     Ingredient ingredient = IngredientLoadable.DISALLOW_EMPTY.convert(ingredientJson, "ingredient");
     int needed = GsonHelper.getAsInt(json, "needed", 1);
     return new ContainsItemModifierLootCondition(ingredient, needed);

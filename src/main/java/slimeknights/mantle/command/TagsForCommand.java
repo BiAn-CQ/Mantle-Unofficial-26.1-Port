@@ -38,10 +38,12 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.fluids.capability.IFluidHandlerItem;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.access.ItemAccess;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.fluid.FluidUtil;
 import slimeknights.mantle.command.argument.RegistryTagSource;
 import slimeknights.mantle.command.argument.TagSource;
 import slimeknights.mantle.command.argument.TagSourceArgument;
@@ -57,7 +59,7 @@ import java.util.Optional;
  * Command to list all tags for an entry.
  * TODO 1.21: move to {@link slimeknights.mantle.command.tags}.
  */
-@SuppressWarnings({"deprecation", "removal"}) // Legacy item handler API retained for TConstruct 26.1 compatibility.
+@SuppressWarnings({"deprecation", "removal"})
 public class TagsForCommand {
   /** Tag type cannot be found */
   protected static final Dynamic2CommandExceptionType VALUE_NOT_FOUND = new Dynamic2CommandExceptionType((type, name) -> Component.translatable("command.mantle.tags_for.not_found", String.valueOf(type), String.valueOf(name)));
@@ -178,11 +180,10 @@ public class TagsForCommand {
   private static int heldFluid(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
     CommandSourceStack source = context.getSource();
     ItemStack stack = source.getPlayerOrException().getMainHandItem();
-    Optional<IFluidHandlerItem> capability = FluidUtil.getFluidHandler(stack);
-    if (capability.isPresent()) {
-      IFluidHandler handler = capability.orElseThrow();
-      if (handler.getTanks() > 0) {
-        FluidStack fluidStack = handler.getFluidInTank(0);
+    if (!stack.isEmpty()) {
+      ResourceHandler<FluidResource> handler = ItemAccess.forStack(stack).getCapability(Capabilities.Fluid.ITEM);
+      if (handler != null && handler.size() > 0) {
+        FluidStack fluidStack = FluidUtil.getStack(handler, 0);
         if (!fluidStack.isEmpty()) {
           Fluid fluid = fluidStack.getFluid();
           return printOwningTags(context, BuiltInRegistries.FLUID, fluid);

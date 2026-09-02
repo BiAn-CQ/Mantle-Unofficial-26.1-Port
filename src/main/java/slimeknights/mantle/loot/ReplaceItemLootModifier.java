@@ -13,7 +13,6 @@ import net.minecraft.world.level.storage.loot.functions.LootItemFunctions;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.neoforged.neoforge.common.loot.IGlobalLootModifier;
 import net.neoforged.neoforge.common.loot.LootModifier;
-import net.neoforged.neoforge.items.ItemHandlerHelper;
 import slimeknights.mantle.data.MantleCodecs;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 
@@ -24,7 +23,6 @@ import java.util.ListIterator;
 import java.util.function.BiFunction;
 
 /** Loot modifier to replace an item with another */
-@SuppressWarnings("removal") // Legacy item handler API retained for TConstruct 26.1 compatibility.
 public class ReplaceItemLootModifier extends LootModifier {
   public static final MapCodec<ReplaceItemLootModifier> CODEC = RecordCodecBuilder.mapCodec(inst -> codecStart(inst).and(
     inst.group(

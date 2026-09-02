@@ -7,21 +7,22 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.core.NonNullList;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.tags.TagKey;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.util.StringUtil;
 import slimeknights.mantle.client.book.repository.BookRepository;
-import slimeknights.mantle.data.loadable.common.ItemStackLoadable;
+import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.recipe.ingredient.SizedIngredient;
 
 import java.lang.reflect.Type;
@@ -29,7 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IngredientData implements IDataElement {
-  private static final String LEGACY_NBT_TYPE = "forge:nbt";
+  private static final DynamicOps<JsonElement> JSON_OPS = RegistryOps.create(
+    JsonOps.INSTANCE, RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
 
   public SizedIngredient[] ingredients = new SizedIngredient[0];
   public String action;
@@ -108,14 +110,14 @@ public class IngredientData implements IDataElement {
         JsonArray array = json.getAsJsonArray();
         data.ingredients = new SizedIngredient[array.size()];
         ArrayList<ItemStack> expandedItems = new ArrayList<>();
-        boolean hasLegacyNbt = false;
+        boolean hasStackData = false;
 
         for(int i = 0; i < array.size(); i++) {
           try {
             JsonElement element = array.get(i);
-            if (isLegacyNbt(element)) {
-              hasLegacyNbt = true;
-              expandedItems.add(readLegacyNbtItem(element.getAsJsonObject()));
+            if (isStackData(element)) {
+              hasStackData = true;
+              expandedItems.add(readStack(element));
             } else {
               data.ingredients[i] = readIngredient(element);
               expandedItems.addAll(data.ingredients[i].getMatchingStacks());
@@ -126,10 +128,9 @@ public class IngredientData implements IDataElement {
           }
         }
 
-        // Ingredient cannot retain item components in 26.1. If any entry uses
-        // the legacy Forge NBT ingredient format, keep the resolved stacks
-        // directly so tool and part icons retain their material data.
-        if (hasLegacyNbt) {
+        // Ingredient cannot retain item components. Preserve explicit native
+        // stack entries directly while expanding ordinary ingredients beside them.
+        if (hasStackData) {
           data.customData = true;
           data.items = expandedItems.isEmpty()
                        ? NonNullList.withSize(1, data.getMissingItem())
@@ -139,9 +140,9 @@ public class IngredientData implements IDataElement {
         return data;
       }
 
-      if (isLegacyNbt(json)) {
+      if (isStackData(json)) {
         try {
-          data.items = NonNullList.withSize(1, readLegacyNbtItem(json.getAsJsonObject()));
+          data.items = NonNullList.withSize(1, readStack(json));
           data.customData = true;
         } catch (Exception e) {
           data.error = e.getMessage();
@@ -172,42 +173,23 @@ public class IngredientData implements IDataElement {
       return data;
     }
 
-    private static boolean isLegacyNbt(JsonElement json) {
-      if (!json.isJsonObject()) {
-        return false;
-      }
-      JsonElement type = json.getAsJsonObject().get("type");
-      return type != null && type.isJsonPrimitive() && LEGACY_NBT_TYPE.equals(type.getAsString());
+    private static boolean isStackData(JsonElement json) {
+      return json.isJsonObject() && json.getAsJsonObject().has("id");
     }
 
-    private static ItemStack readLegacyNbtItem(JsonObject json) {
-      ItemStack stack = ItemStackLoadable.OPTIONAL_ITEM_NBT.deserialize(json);
+    private static ItemStack readStack(JsonElement json) {
+      ItemStack stack = ItemStackTemplate.CODEC.parse(JSON_OPS, json).getOrThrow(JsonParseException::new).create();
       if (stack.isEmpty()) {
-        throw new JsonParseException("Legacy NBT ingredient resolved to an empty item");
+        throw new JsonParseException("Item stack resolved to an empty item");
       }
       return stack;
     }
 
     private SizedIngredient readIngredient(JsonElement json) {
-      if(json.isJsonPrimitive()) {
-        JsonPrimitive primitive = json.getAsJsonPrimitive();
-
-        if(primitive.isString()) {
-          Item item = BuiltInRegistries.ITEM.getValue(Identifier.parse(primitive.getAsString()));
-          return SizedIngredient.fromItems(item);
-        }
+      if (json.isJsonObject() && json.getAsJsonObject().has("ingredient")) {
+        return SizedIngredient.LOADABLE.deserialize(json.getAsJsonObject());
       }
-
-      if(!json.isJsonObject()) {
-        throw new JsonParseException("Must be an array, string or JSON object");
-      }
-
-      JsonObject object = json.getAsJsonObject();
-      if (object.has("tag")) {
-        Identifier tagId = Identifier.parse(object.get("tag").getAsString());
-        return SizedIngredient.fromTag(TagKey.create(Registries.ITEM, tagId));
-      }
-      return SizedIngredient.LOADABLE.deserialize(object);
+      return SizedIngredient.of(IngredientLoadable.DISALLOW_EMPTY.convert(json, "ingredient"));
     }
   }
 }

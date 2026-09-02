@@ -218,13 +218,13 @@ public class RemoveRecipesCommand {
 
     // create the object for removing recipes
     JsonObject json = new JsonObject();
-    json.add("conditions", JsonHelper.serializeConditions(NeverCondition.INSTANCE));
+    json.add("neoforge:conditions", JsonHelper.serializeConditions(NeverCondition.INSTANCE));
     String jsonString = DEFAULT_GSON.toJson(json);
 
     int successes = 0;
     Path data = pack.resolve(PackType.SERVER_DATA.getDirectory());
     for (Identifier id : recipes) {
-      Path path = data.resolve(id.getNamespace() + "/recipes/" + id.getPath() + ".json");
+      Path path = data.resolve(id.getNamespace() + "/recipe/" + id.getPath() + ".json");
       try {
         Files.createDirectories(path.getParent());
         try (BufferedWriter writer = Files.newBufferedWriter(path)) {
@@ -268,8 +268,8 @@ public class RemoveRecipesCommand {
 
     // create the object for removing recipes
     Path data = pack.resolve(PackType.SERVER_DATA.getDirectory());
-    Path path = data.resolve(id.getNamespace() + "/recipes/" + id.getPath() + ".json");
-    if (!GeneratePackHelper.saveConditionRemove(path, "conditions")) {
+    Path path = data.resolve(id.getNamespace() + "/recipe/" + id.getPath() + ".json");
+    if (!GeneratePackHelper.saveConditionRemove(path, "neoforge:conditions")) {
       throw GeneratePackHelper.FAILED_SAVE.create(id);
     }
 

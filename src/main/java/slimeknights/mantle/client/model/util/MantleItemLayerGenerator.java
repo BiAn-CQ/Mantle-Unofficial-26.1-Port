@@ -24,7 +24,7 @@ import java.util.EnumMap;
 /**
  * Generates extruded item sprite layers using Mantle's legacy edge-merging
  * rules. Minecraft 26.1 emits a separate quad for every boundary pixel; that
- * is visually different from Mantle's 1.20.1 renderer when a thin side is
+ * is visually different from the established renderer when a thin side is
  * viewed at an angle, and it cannot reproduce cross-layer pixel suppression
  * without leaving seams between adjacent quads.
  */
@@ -32,7 +32,7 @@ public final class MantleItemLayerGenerator {
   private static final float MIN_Z = 7.5f;
   private static final float MAX_Z = 8.5f;
   private static final float UV_EPSILON = 0.01f;
-  /** Matches the 1.20.1 item-layer cutoff: alpha values at or below 10% are transparent. */
+  /** Alpha values at or below 10% are treated as transparent. */
   private static final int ALPHA_CUTOFF = 25;
   private static final Direction[] HORIZONTAL_FACES = {Direction.UP, Direction.DOWN};
   private static final Direction[] VERTICAL_FACES = {Direction.WEST, Direction.EAST};

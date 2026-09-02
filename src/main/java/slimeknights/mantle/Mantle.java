@@ -142,7 +142,7 @@ public class Mantle {
       .toArray(Block[]::new);
     if (blockEntityBlocks.length > 0) {
       event.registerBlock(Capabilities.Item.BLOCK,
-        (level, pos, state, blockEntity, side) -> blockEntity instanceof InventoryBlockEntity inventory ? inventory.getTransferItemHandler() : null,
+        (level, pos, state, blockEntity, side) -> blockEntity instanceof InventoryBlockEntity inventory ? inventory.getItemHandler() : null,
         blockEntityBlocks);
     }
   }
@@ -277,7 +277,7 @@ public class Mantle {
   }
 
   /**
-   * Gets a resource location for the common namespace, which is "forge" for 1.20 and "c" for 1.21.
+   * Gets a resource location for the common {@code c} namespace.
    * @param name  Name
    * @return  Resource location instance
    */

@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import net.minecraft.network.FriendlyByteBuf;
 import slimeknights.mantle.Mantle;
-import slimeknights.mantle.data.loadable.LegacyLoadable;
 import slimeknights.mantle.util.typed.TypedMap;
 
 import javax.annotation.Nullable;
@@ -27,7 +26,8 @@ public record CatchErrorsField<T,P>(LoadableField<T,P> nested, @Nullable T value
     try {
       return nested.get(json, key, context);
     } catch (JsonParseException e) {
-      Mantle.logger.error("Caught error on field {}{}, substituting fallback value {}.", key(), LegacyLoadable.whileParsing(context), valueOnError, e);
+      String debug = context.get(ContextKey.DEBUG);
+      Mantle.logger.error("Caught error on field {}{}, substituting fallback value {}.", key(), debug == null ? "" : " while parsing " + debug, valueOnError, e);
       return valueOnError;
     }
   }

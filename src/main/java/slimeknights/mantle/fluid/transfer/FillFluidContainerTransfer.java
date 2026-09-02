@@ -8,13 +8,14 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.mojang.serialization.JsonOps;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import org.apache.commons.lang3.function.TriFunction;
 import org.jetbrains.annotations.Nullable;
 import slimeknights.mantle.Mantle;
@@ -27,9 +28,8 @@ import java.lang.reflect.Type;
 import java.util.function.Consumer;
 
 /** Fluid transfer info that fills a fluid into an item */
-@SuppressWarnings("removal") // Legacy fluid handler API retained for TConstruct 26.1 compatibility.
 @RequiredArgsConstructor
-public class FillFluidContainerTransfer implements IFluidContainerTransfer.WithDirection {
+public class FillFluidContainerTransfer implements IFluidContainerTransfer {
   public static final Identifier ID = Mantle.getResource("fill_item");
 
   private final Ingredient input;
@@ -53,19 +53,18 @@ public class FillFluidContainerTransfer implements IFluidContainerTransfer.WithD
 
   @Nullable
   @Override
-  public TransferResult transfer(ItemStack stack, FluidStack fluid, IFluidHandler handler, TransferDirection direction) {
+  public TransferResult transfer(ItemStack stack, FluidStack fluid, ResourceHandler<FluidResource> handler, TransferDirection direction) {
     if (!direction.canFill()) {
       return null;
     }
     int amount = this.fluid.getAmount(fluid.getFluid());
     FluidStack toDrain = fluid.copyWithAmount(amount);
-    FluidStack simulated = handler.drain(toDrain.copy(), IFluidHandler.FluidAction.SIMULATE);
-    if (simulated.getAmount() == amount) {
-      FluidStack actual = handler.drain(toDrain.copy(), IFluidHandler.FluidAction.EXECUTE);
-      if (actual.getAmount() != amount) {
-        Mantle.logger.error("Wrong amount drained from {}, expected {}, filled {}", BuiltInRegistries.ITEM.getKey(stack.getItem()), fluid.getAmount(), actual.getAmount());
+    try (Transaction transaction = Transaction.openRoot()) {
+      int extracted = handler.extract(FluidResource.of(toDrain), amount, transaction);
+      if (extracted == amount) {
+        transaction.commit();
+        return new TransferResult(getFilled(toDrain), toDrain, true);
       }
-      return new TransferResult(getFilled(toDrain), toDrain, true);
     }
     return null;
   }

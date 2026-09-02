@@ -7,7 +7,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import slimeknights.mantle.data.gson.GenericRegisteredSerializer.IJsonSerializable;
 import slimeknights.mantle.fluid.FluidTransferHelper;
 
@@ -15,7 +16,6 @@ import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 /** Interface for transferring fluid either to or from an item */
-@SuppressWarnings("removal") // Legacy fluid handler API retained for TConstruct 26.1 compatibility.
 public interface IFluidContainerTransfer extends IJsonSerializable {
   /**
    * Adds every item an ingredient may accept without assuming it has a vanilla holder set.
@@ -43,17 +43,6 @@ public interface IFluidContainerTransfer extends IJsonSerializable {
 
   /**
    * Performs the actual transfer into or out of the handler
-   * @param stack    Stack to transfer
-   * @param fluid    Current fluid the handler allows draining. Does not mean the handler may not accept other fluids
-   * @param handler  Handler either receiving or giving fluid
-   * @return  container after the transfer and the fluid transferred, null if the transfer failed
-   */
-  @Deprecated(forRemoval = true)
-  @Nullable
-  TransferResult transfer(ItemStack stack, FluidStack fluid, IFluidHandler handler);
-
-  /**
-   * Performs the actual transfer into or out of the handler
    * @param stack      Stack to transfer
    * @param fluid      Current fluid the handler allows draining. Does not mean the handler may not accept other fluids
    * @param handler    Handler either receiving or giving fluid
@@ -61,9 +50,7 @@ public interface IFluidContainerTransfer extends IJsonSerializable {
    * @return  container after the transfer and the fluid transferred, null if the transfer failed
    */
   @Nullable
-  default TransferResult transfer(ItemStack stack, FluidStack fluid, IFluidHandler handler, TransferDirection direction) {
-    return transfer(stack, fluid, handler);
-  }
+  TransferResult transfer(ItemStack stack, FluidStack fluid, ResourceHandler<FluidResource> handler, TransferDirection direction);
 
   /**
    * Result after transferring a fluid
@@ -97,21 +84,6 @@ public interface IFluidContainerTransfer extends IJsonSerializable {
     /** If true, may empty the item */
     public boolean canFill() {
       return this != EMPTY_ITEM;
-    }
-  }
-
-  /** Temporary interface to make it easier to work with the method deprecation */
-  interface WithDirection extends IFluidContainerTransfer {
-    @Nullable
-    @Override
-    TransferResult transfer(ItemStack stack, FluidStack fluid, IFluidHandler handler, TransferDirection direction);
-
-    @SuppressWarnings("removal")
-    @Nullable
-    @Override
-    @Deprecated(forRemoval = true)
-    default TransferResult transfer(ItemStack stack, FluidStack fluid, IFluidHandler handler) {
-      return transfer(stack, fluid, handler, TransferDirection.AUTO);
     }
   }
 }

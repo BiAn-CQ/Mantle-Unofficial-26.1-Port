@@ -30,7 +30,7 @@ public record LoadableIngredientSerializer<T>(RecordLoadable<T> loadable) {
     return mapCodec(this::parse, this::serialize);
   }
 
-  /** Creates a registry codec from the legacy JSON parser/serializer pair. */
+  /** Creates a registry codec from the loadable JSON parser/serializer pair. */
   public static <T> MapCodec<T> mapCodec(Function<JsonObject,T> parser, BiConsumer<T,JsonObject> serializer) {
     JsonCodec<T> codec = new JsonCodec<>() {
       @Override

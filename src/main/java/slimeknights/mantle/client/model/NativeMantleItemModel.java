@@ -1,8 +1,6 @@
 package slimeknights.mantle.client.model;
 
-import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -32,7 +30,6 @@ import slimeknights.mantle.util.ItemLayerPixels;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -40,37 +37,16 @@ import java.util.Map;
  *
  * <p>The old loaders produced Forge {@code BakedModel} overrides.  26.1 uses
  * {@link ItemModel} render states instead, so the bridge bakes the same flat
- * layers with Minecraft's own {@link ItemModelGenerator}.  NBT variants are
- * selected from the modern {@link DataComponents#CUSTOM_DATA} component while
- * retaining the 1.20.1 key names used by Tinkers' Construct.</p>
+ * layers with Minecraft's own {@link ItemModelGenerator}. Custom-data variants
+ * are selected from the modern {@link DataComponents#CUSTOM_DATA} component.</p>
  */
 public final class NativeMantleItemModel implements ItemModel {
-  /** Accepts both Mantle's historical eight-digit form and modern # colors. */
-  private static final Codec<Integer> LAYER_COLOR_CODEC = Codec.either(
-    ExtraCodecs.STRING_ARGB_COLOR,
-    Codec.STRING.flatXmap(NativeMantleItemModel::parseLegacyColor,
-      color -> DataResult.success(String.format(Locale.ROOT, "#%08X", color)))
-  ).xmap(either -> either.map(value -> value, value -> value), Either::left);
+  private static final Codec<Integer> LAYER_COLOR_CODEC = ExtraCodecs.STRING_ARGB_COLOR;
 
   private final ItemModel delegate;
 
   private NativeMantleItemModel(ItemModel delegate) {
     this.delegate = delegate;
-  }
-
-  private static DataResult<Integer> parseLegacyColor(String value) {
-    String hex = value.startsWith("#") ? value.substring(1) : value;
-    if (hex.length() == 6) {
-      hex = "FF" + hex;
-    }
-    if (hex.length() != 8) {
-      return DataResult.error(() -> "Expected 6 or 8 hexadecimal color digits: " + value);
-    }
-    try {
-      return DataResult.success((int)Long.parseLong(hex, 16));
-    } catch (NumberFormatException exception) {
-      return DataResult.error(() -> "Invalid hexadecimal color: " + value);
-    }
   }
 
   @Override
@@ -129,13 +105,13 @@ public final class NativeMantleItemModel implements ItemModel {
 
   private record BakedLayer(Material.Baked material, int tintIndex, ExtraFaceData faceData) {}
 
-  private static final class DynamicNbtModel implements ItemModel {
-    private final String nbtKey;
+  private static final class DynamicCustomDataModel implements ItemModel {
+    private final String customDataKey;
     private final ItemModel fallback;
     private final Map<String, ItemModel> variants;
 
-    private DynamicNbtModel(String nbtKey, ItemModel fallback, Map<String, ItemModel> variants) {
-      this.nbtKey = nbtKey;
+    private DynamicCustomDataModel(String customDataKey, ItemModel fallback, Map<String, ItemModel> variants) {
+      this.customDataKey = customDataKey;
       this.fallback = fallback;
       this.variants = variants;
     }
@@ -145,12 +121,12 @@ public final class NativeMantleItemModel implements ItemModel {
                        ItemDisplayContext displayContext, @Nullable ClientLevel level,
                        @Nullable ItemOwner owner, int seed) {
       CustomData data = item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-      String value = data.copyTag().getStringOr(nbtKey, "");
+      String value = data.copyTag().getStringOr(customDataKey, "");
       variants.getOrDefault(value, fallback).update(output, item, resolver, displayContext, level, owner, seed);
     }
   }
 
-  /** Per-layer static color and emission, matching Mantle's legacy JSON. */
+  /** Per-layer static color and emission. */
   public record LayerData(int color, int luminosity, boolean noTint) {
     private static final Codec<LayerData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
       LAYER_COLOR_CODEC.optionalFieldOf("color", -1).forGetter(LayerData::color),
@@ -188,16 +164,16 @@ public final class NativeMantleItemModel implements ItemModel {
     }
   }
 
-  /** Native replacement for {@code loader: mantle:nbt_key}. */
-  public record NbtKeyUnbaked(Identifier parent, Map<String, Material> textures,
-                              String nbtKey) implements ItemModel.Unbaked {
-    public static final MapCodec<NbtKeyUnbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+  /** Selects an item texture from a string stored in the stack's custom-data component. */
+  public record CustomDataKeyUnbaked(Identifier parent, Map<String, Material> textures,
+                                     String customDataKey) implements ItemModel.Unbaked {
+    public static final MapCodec<CustomDataKeyUnbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
       Identifier.CODEC.optionalFieldOf("parent", Identifier.withDefaultNamespace("item/generated"))
-        .forGetter(NbtKeyUnbaked::parent),
+        .forGetter(CustomDataKeyUnbaked::parent),
       Codec.unboundedMap(Codec.STRING, Material.CODEC).optionalFieldOf("textures", Map.of())
-        .forGetter(NbtKeyUnbaked::textures),
-      Codec.STRING.fieldOf("nbt_key").forGetter(NbtKeyUnbaked::nbtKey)
-    ).apply(instance, NbtKeyUnbaked::new));
+        .forGetter(CustomDataKeyUnbaked::textures),
+      Codec.STRING.fieldOf("custom_data_key").forGetter(CustomDataKeyUnbaked::customDataKey)
+    ).apply(instance, CustomDataKeyUnbaked::new));
 
     @Override
     public void resolveDependencies(Resolver resolver) {
@@ -217,11 +193,11 @@ public final class NativeMantleItemModel implements ItemModel {
             Map.of("layer0", entry.getValue()), List.of()));
         }
       }
-      return new NativeMantleItemModel(new DynamicNbtModel(nbtKey, fallback, Map.copyOf(variants)));
+      return new NativeMantleItemModel(new DynamicCustomDataModel(customDataKey, fallback, Map.copyOf(variants)));
     }
 
     @Override
-    public MapCodec<NbtKeyUnbaked> type() {
+    public MapCodec<CustomDataKeyUnbaked> type() {
       return MAP_CODEC;
     }
   }

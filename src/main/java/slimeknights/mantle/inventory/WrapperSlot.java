@@ -4,21 +4,15 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.SlotItemHandler;
 
 import java.util.Optional;
 
 /**
  * Used to wrap the slots inside Modules/Subcontainers
  */
-@SuppressWarnings("removal") // Legacy item handler API retained for TConstruct 26.1 compatibility.
 public class WrapperSlot extends Slot {
 
   public final Slot parent;
-  /** Client mirror used when a legacy slot is backed by a read-only transfer view. */
-  private ItemStack mirroredStack = ItemStack.EMPTY;
-  private boolean hasMirroredStack;
 
   public WrapperSlot(Slot slot) {
     this(slot, slot.x, slot.y);
@@ -46,19 +40,6 @@ public class WrapperSlot extends Slot {
     return new WrapperSlot(slot, x, y);
   }
 
-  /**
-   * NeoForge 26.1's container synchronization calls {@link Slot#set(ItemStack)}
-   * on every client slot.  Some legacy capability views are deliberately
-   * exposed as read-only {@link net.neoforged.neoforge.items.IItemHandler}s,
-   * while {@link SlotItemHandler#set(ItemStack)} still casts them to
-   * {@link IItemHandlerModifiable}.  Keep the synchronized stack locally for
-   * those views so a wrapper remains safe for both old and native handlers.
-   */
-  private boolean usesReadOnlyHandler() {
-    return this.parent instanceof SlotItemHandler handler
-      && !(handler.getItemHandler() instanceof IItemHandlerModifiable);
-  }
-
   @Override
   public void onQuickCraft(ItemStack oldStack, ItemStack newStack) {
     this.parent.onQuickCraft(oldStack, newStack);
@@ -76,7 +57,7 @@ public class WrapperSlot extends Slot {
 
   @Override
   public ItemStack getItem() {
-    return this.usesReadOnlyHandler() && this.hasMirroredStack ? this.mirroredStack : this.parent.getItem();
+    return this.parent.getItem();
   }
 
   @Override
@@ -86,28 +67,17 @@ public class WrapperSlot extends Slot {
 
   @Override
   public void setByPlayer(ItemStack stack) {
-    if (this.usesReadOnlyHandler()) {
-      this.set(stack);
-    } else {
-      this.parent.setByPlayer(stack);
-    }
+    this.parent.setByPlayer(stack);
   }
 
   @Override
   public void set(ItemStack stack) {
-    if (this.usesReadOnlyHandler()) {
-      this.mirroredStack = stack.copy();
-      this.hasMirroredStack = true;
-    } else {
-      this.parent.set(stack);
-    }
+    this.parent.set(stack);
   }
 
   @Override
   public void setChanged() {
-    if (!this.usesReadOnlyHandler()) {
-      this.parent.setChanged();
-    }
+    this.parent.setChanged();
   }
 
   @Override
@@ -127,15 +97,6 @@ public class WrapperSlot extends Slot {
 
   @Override
   public ItemStack remove(int amount) {
-    if (this.usesReadOnlyHandler()) {
-      ItemStack current = this.getItem();
-      if (current.isEmpty()) {
-        return ItemStack.EMPTY;
-      }
-      ItemStack removed = current.split(amount);
-      this.mirroredStack = current;
-      return removed;
-    }
     return this.parent.remove(amount);
   }
 

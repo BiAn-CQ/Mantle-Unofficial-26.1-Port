@@ -24,7 +24,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
-import net.neoforged.neoforge.client.event.ModelEvent.RegisterLoaders;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.RegisterFluidModelsEvent;
@@ -32,14 +31,15 @@ import net.neoforged.neoforge.client.event.RegisterBlockStateModels;
 import net.neoforged.neoforge.client.event.RegisterItemModelsEvent;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.fluids.capability.templates.EmptyFluidHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.fluid.FluidUtil;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -53,7 +53,6 @@ import slimeknights.mantle.client.model.NativeCompositeBlockStateModel;
 import slimeknights.mantle.client.model.NativeRetexturedBlockStateModel;
 import slimeknights.mantle.client.model.connected.NativeConnectedBlockStateModel;
 import slimeknights.mantle.client.model.TextureColorHelper;
-import slimeknights.mantle.client.model.LegacyModelLoader;
 import slimeknights.mantle.client.model.util.ModelHelper;
 import slimeknights.mantle.client.render.FluidCuboid;
 import slimeknights.mantle.client.render.RenderItem;
@@ -75,7 +74,6 @@ import java.util.List;
 import java.util.Optional;
 
 @EventBusSubscriber(modid = Mantle.modId, value = Dist.CLIENT)
-@SuppressWarnings("removal") // Legacy fluid handler API retained for TConstruct 26.1 compatibility.
 public class ClientEvents {
   private static final Identifier CROSSHAIR_ATTACK_BACKGROUND = Identifier.withDefaultNamespace("hud/crosshair_attack_indicator_background");
   private static final Identifier CROSSHAIR_ATTACK_PROGRESS = Identifier.withDefaultNamespace("hud/crosshair_attack_indicator_progress");
@@ -96,23 +94,11 @@ public class ClientEvents {
     }
   }
 
-  /** Registers the compatibility boundary for legacy 1.20.1 model JSON. */
-  @SubscribeEvent
-  static void registerModelLoaders(RegisterLoaders event) {
-    LegacyModelLoader loader = LegacyModelLoader.INSTANCE;
-    event.register(Mantle.getResource("connected"), loader);
-    event.register(Mantle.getResource("item_layer"), loader);
-    event.register(Mantle.getResource("retextured"), loader);
-    event.register(Mantle.getResource("colored_block"), loader);
-    event.register(Mantle.getResource("nbt_key"), loader);
-    event.register(Identifier.fromNamespaceAndPath("forge", "composite"), loader);
-  }
-
   /** Registers native 26.1 item-model replacements for Mantle's dynamic layers. */
   @SubscribeEvent
   static void registerItemModels(RegisterItemModelsEvent event) {
     event.register(Mantle.getResource("item_layer"), NativeMantleItemModel.ItemLayerUnbaked.MAP_CODEC);
-    event.register(Mantle.getResource("nbt_key"), NativeMantleItemModel.NbtKeyUnbaked.MAP_CODEC);
+    event.register(Mantle.getResource("custom_data_key"), NativeMantleItemModel.CustomDataKeyUnbaked.MAP_CODEC);
   }
 
   /** Registers Mantle's native connected-texture blockstate model. */
@@ -271,22 +257,23 @@ public class ClientEvents {
     if (gaugeContainer == null || RegistryHelper.contains(BuiltInRegistries.BLOCK_ENTITY_TYPE, MantleTags.BlockEntities.GAUGE_BLACKLIST, gaugeContainer.getType())) {
       return;
     }
-    IFluidHandler handler = FluidUtil.getFluidHandler(minecraft.level, containerPos, side).orElse(EmptyFluidHandler.INSTANCE);
-    if (handler.getTanks() <= 0) {
+    ResourceHandler<FluidResource> handler = minecraft.level.getCapability(Capabilities.Fluid.BLOCK, containerPos, side);
+    if (handler == null || handler.size() <= 0) {
       return;
     }
     // if the fluid is empty, just render the capacity
-    FluidStack fluid = handler.getFluidInTank(0);
+    FluidStack fluid = FluidUtil.getStack(handler, 0);
+    int capacity = handler.getCapacityAsInt(0, handler.getResource(0));
     List<Component> tooltip;
     if (fluid.isEmpty()) {
-      tooltip = List.of(GaugeBlock.formatCapacity(handler.getTankCapacity(0)));
+      tooltip = List.of(GaugeBlock.formatCapacity(capacity));
     } else if (RegistryHelper.contains(BuiltInRegistries.BLOCK_ENTITY_TYPE, MantleTags.BlockEntities.HIDES_GAUGE_AMOUNT, gaugeContainer.getType())) {
       // in the tag, don't show capacity
       Identifier id = BuiltInRegistries.FLUID.getKey(fluid.getFluid());
       tooltip = new ArrayList<>(3);
       tooltip.add(fluid.getHoverName());
       FluidTooltipHandler.appendAdvanced(id, tooltip);
-      tooltip.add(GaugeBlock.formatCapacity(handler.getTankCapacity(0)).withStyle(ChatFormatting.GRAY));
+      tooltip.add(GaugeBlock.formatCapacity(capacity).withStyle(ChatFormatting.GRAY));
       tooltip.add(FluidTooltipHandler.formatModName(id));
     } else {
       // render full fluid tooltip

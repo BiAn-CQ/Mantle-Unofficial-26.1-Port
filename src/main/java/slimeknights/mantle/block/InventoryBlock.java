@@ -15,7 +15,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import slimeknights.mantle.block.entity.INameableMenuProvider;
 import slimeknights.mantle.inventory.BaseContainerMenu;
 
@@ -24,7 +26,7 @@ import javax.annotation.Nullable;
 /**
  * Base class for blocks with an inventory
  */
-@SuppressWarnings({"WeakerAccess", "removal"}) // Legacy item handler API retained for TConstruct 26.1 compatibility.
+@SuppressWarnings("WeakerAccess")
 public abstract class InventoryBlock extends Block implements EntityBlock {
 
   protected InventoryBlock(BlockBehaviour.Properties builder) {
@@ -96,7 +98,7 @@ public abstract class InventoryBlock extends Block implements EntityBlock {
    * @param pos         Tile position
    * @param inventory   Item handler
    */
-  protected void dropInventoryItems(BlockState state, Level worldIn, BlockPos pos, IItemHandler inventory) {
+  protected void dropInventoryItems(BlockState state, Level worldIn, BlockPos pos, ResourceHandler<ItemResource> inventory) {
     dropInventoryItems(worldIn, pos, inventory);
   }
 
@@ -106,12 +108,22 @@ public abstract class InventoryBlock extends Block implements EntityBlock {
    * @param pos        Position to drop
    * @param inventory  Inventory instance
    */
-  public static void dropInventoryItems(Level world, BlockPos pos, IItemHandler inventory) {
+  public static void dropInventoryItems(Level world, BlockPos pos, ResourceHandler<ItemResource> inventory) {
     double x = pos.getX();
     double y = pos.getY();
     double z = pos.getZ();
-    for(int i = 0; i < inventory.getSlots(); ++i) {
-      Containers.dropItemStack(world, x, y, z, inventory.getStackInSlot(i));
+    for(int i = 0; i < inventory.size(); ++i) {
+      ItemResource resource = inventory.getResource(i);
+      int amount = inventory.getAmountAsInt(i);
+      if (!resource.isEmpty() && amount > 0) {
+        try (Transaction transaction = Transaction.openRoot()) {
+          int extracted = inventory.extract(i, resource, amount, transaction);
+          if (extracted > 0) {
+            transaction.commit();
+            Containers.dropItemStack(world, x, y, z, resource.toStack(extracted));
+          }
+        }
+      }
     }
   }
 

@@ -2,20 +2,17 @@ package slimeknights.mantle.recipe.helper;
 
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStackTemplate;
 import net.neoforged.neoforge.fluids.FluidStack;
 import slimeknights.mantle.data.loadable.Loadables;
-import slimeknights.mantle.data.loadable.common.FluidStackLoadable;
 import slimeknights.mantle.data.loadable.common.FluidStackTemplateLoadable;
-import slimeknights.mantle.data.loadable.common.NBTLoadable;
+import slimeknights.mantle.data.loadable.common.RegistryCodecLoadable;
 import slimeknights.mantle.data.loadable.field.LoadableField;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -34,6 +31,8 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
   public static final FluidOutput EMPTY = new OfStack(FluidStack.EMPTY);
   public static final StreamCodec<RegistryFriendlyByteBuf, FluidOutput> STREAM_CODEC =
     FluidStack.OPTIONAL_STREAM_CODEC.map(FluidOutput::fromStack, FluidOutput::get);
+  private static final slimeknights.mantle.data.loadable.Loadable<DataComponentPatch> COMPONENTS =
+    new RegistryCodecLoadable<>(DataComponentPatch.CODEC, DataComponentPatch.STREAM_CODEC);
 
 
   /**
@@ -112,11 +111,11 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
    * Creates a new output for the given tag
    * @param tag   Tag
    * @param amount Stack amount
-   * @param nbt    Stack NBT
+   * @param components Stack components
    * @return Output
    */
-  public static FluidOutput fromTag(TagKey<Fluid> tag, int amount, @Nullable CompoundTag nbt) {
-    return new OfTagPreference(tag, amount, nbt);
+  public static FluidOutput fromTag(TagKey<Fluid> tag, int amount, DataComponentPatch components) {
+    return new OfTagPreference(tag, amount, components);
   }
 
   /**
@@ -126,7 +125,7 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
    * @return Output
    */
   public static FluidOutput fromTag(TagKey<Fluid> tag, int amount) {
-    return fromTag(tag, amount, null);
+    return fromTag(tag, amount, DataComponentPatch.EMPTY);
   }
 
   /**
@@ -173,9 +172,9 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
     @Override
     public void serialize(JsonObject json) {
       if (amount > 0) {
-        json.add("fluid", Loadables.FLUID.serialize(this.fluid));
+        FluidStackTemplateLoadable.STACK.serialize(new FluidStackTemplate(fluid, amount)).getAsJsonObject().entrySet()
+          .forEach(entry -> json.add(entry.getKey(), entry.getValue()));
       }
-      json.addProperty("amount", amount);
     }
   }
 
@@ -203,7 +202,7 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public void serialize(JsonObject json) {
-      FluidStackTemplateLoadable.serialize(template).getAsJsonObject().entrySet()
+      FluidStackTemplateLoadable.STACK.serialize(template).getAsJsonObject().entrySet()
         .forEach(entry -> json.add(entry.getKey(), entry.getValue()));
     }
   }
@@ -228,7 +227,10 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public void serialize(JsonObject json) {
-      FluidStackLoadable.OPTIONAL_STACK_NBT.serialize(stack, json);
+      if (!stack.isEmpty()) {
+        FluidStackTemplateLoadable.STACK.serialize(FluidStackTemplate.fromNonEmptyStack(stack)).getAsJsonObject().entrySet()
+          .forEach(entry -> json.add(entry.getKey(), entry.getValue()));
+      }
     }
   }
 
@@ -236,14 +238,13 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
   private static class OfTagPreference extends FluidOutput {
     private final TagKey<Fluid> tag;
     private final int amount;
-    @Nullable
-    private final CompoundTag nbt;
+    private final DataComponentPatch components;
     private FluidStack cachedResult = null;
 
-    private OfTagPreference(TagKey<Fluid> tag, int amount, @Nullable CompoundTag nbt) {
+    private OfTagPreference(TagKey<Fluid> tag, int amount, DataComponentPatch components) {
       this.tag = tag;
       this.amount = amount;
-      this.nbt = nbt;
+      this.components = components;
     }
 
     @Override
@@ -268,10 +269,7 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
         if (preference.isEmpty()) {
           return FluidStack.EMPTY;
         }
-        cachedResult = new FluidStack(preference.orElseThrow(), amount);
-        if (nbt != null) {
-          cachedResult.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt.copy()));
-        }
+        cachedResult = new FluidStackTemplate(preference.orElseThrow(), amount, components).create();
       }
       return cachedResult;
     }
@@ -282,8 +280,8 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
         json.addProperty("tag", tag.location().toString());
       }
       json.addProperty("amount", amount);
-      if (amount > 0 && nbt != null) {
-        json.add("nbt", NBTLoadable.ALLOW_STRING.serialize(nbt));
+      if (amount > 0 && !components.isEmpty()) {
+        json.add("components", COMPONENTS.serialize(components));
       }
     }
   }
@@ -296,16 +294,10 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
     REQUIRED(true);
 
     private final boolean nonEmpty;
-    private final RecordLoadable<FluidStackTemplate> stack;
+    private final slimeknights.mantle.data.loadable.Loadable<FluidStackTemplate> stack;
     Loadable(boolean nonEmpty) {
       this.nonEmpty = nonEmpty;
-      // figure out the stack serializer to use based on the two parameters
-      // we always do NBT, just those that vary
-      if (nonEmpty) {
-        this.stack = FluidStackTemplateLoadable.STACK_NBT;
-      } else {
-        this.stack = FluidStackTemplateLoadable.STACK_NBT;
-      }
+      this.stack = FluidStackTemplateLoadable.STACK;
     }
 
     @Override
@@ -314,15 +306,15 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
         return fromTag(
           Loadables.FLUID_TAG.getIfPresent(json, "tag", context),
           IntLoadable.FROM_ONE.getIfPresent(json, "amount", context),
-          NBTLoadable.ALLOW_STRING.getOrDefault(json, "nbt", null));
+          COMPONENTS.getOrDefault(json, "components", DataComponentPatch.EMPTY, context));
       }
-      if (!json.has("fluid") || IntLoadable.FROM_ZERO.getOrDefault(json, "amount", 0, context) <= 0) {
+      if (!json.has("id")) {
         if (nonEmpty) {
           throw new IllegalArgumentException("FluidOutput cannot be empty for this recipe");
         }
         return EMPTY;
       }
-      return fromTemplate(stack.deserialize(json, context));
+      return fromTemplate(stack.convert(json, "fluid output", context));
     }
 
     @Override
@@ -335,11 +327,21 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public FluidOutput decode(FriendlyByteBuf buffer, TypedMap context) {
+      if (!nonEmpty && !buffer.readBoolean()) {
+        return EMPTY;
+      }
       return fromTemplate(stack.decode(buffer, context));
     }
 
     @Override
     public void encode(FriendlyByteBuf buffer, FluidOutput object) {
+      if (!nonEmpty) {
+        boolean present = !object.isEmpty();
+        buffer.writeBoolean(present);
+        if (!present) {
+          return;
+        }
+      }
       if (object instanceof OfTemplate template) {
         stack.encode(buffer, template.template);
       } else {

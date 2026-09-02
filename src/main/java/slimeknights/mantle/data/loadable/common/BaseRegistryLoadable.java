@@ -6,7 +6,6 @@ import io.netty.handler.codec.EncoderException;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.Holder;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
@@ -47,14 +46,6 @@ public interface BaseRegistryLoadable<T> extends IdentifierLoadable<T> {
 
   @Override
   default T fromKey(Identifier name, String key, TypedMap context) {
-    // Minecraft 26.1 removed the generic.* prefix from vanilla attribute IDs.
-    // Accept the 1.20.1 spelling while reading old datapacks; serialization
-    // continues to emit the current registry key.
-    if (registryId().equals(Registries.ATTRIBUTE.identifier())
-        && name.getNamespace().equals("minecraft")
-        && name.getPath().startsWith("generic.")) {
-      name = Identifier.fromNamespaceAndPath("minecraft", name.getPath().substring("generic.".length()));
-    }
     ResourceKey<? extends Registry<T>> registryKey = (ResourceKey<? extends Registry<T>>) (ResourceKey<?>) ResourceKey.createRegistryKey(registryId());
     RegistryOps.RegistryInfoLookup registryLookup = context.get(ContextKey.REGISTRY_LOOKUP);
     if (registryLookup != null) {
