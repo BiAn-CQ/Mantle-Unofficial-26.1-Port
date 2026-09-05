@@ -136,4 +136,13 @@ public class EntityIngredientRenderer implements IIngredientRenderer<EntityIngre
     }
     return tooltip;
   }
+
+  @Override
+  public void getTooltip(mezz.jei.api.gui.builder.ITooltipBuilder tooltip, EntityIngredient.EntityInput ingredient, TooltipFlag flag) {
+    tooltip.add(ingredient.type().getDescription());
+    if (flag.isAdvanced()) {
+      tooltip.add(Component.literal(slimeknights.mantle.data.loadable.Loadables.ENTITY_TYPE.getString(ingredient.type()))
+        .withStyle(ChatFormatting.DARK_GRAY));
+    }
+  }
 }

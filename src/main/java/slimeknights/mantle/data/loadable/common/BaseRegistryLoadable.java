@@ -15,6 +15,9 @@ import slimeknights.mantle.data.loadable.primitive.IdentifierLoadable;
 import slimeknights.mantle.util.typed.TypedMap;
 
 import javax.annotation.Nullable;
+import java.util.Set;
+import slimeknights.mantle.data.loadable.Loadable;
+import slimeknights.mantle.data.loadable.mapping.SetLoadable;
 
 /** Common logic for {@link RegistryLoadable} and {@link LazyRegistryLoadable} */
 public interface BaseRegistryLoadable<T> extends IdentifierLoadable<T> {
@@ -101,5 +104,10 @@ public interface BaseRegistryLoadable<T> extends IdentifierLoadable<T> {
       throw new EncoderException("Registry " + registryId() + " cannot be located");
     }
     buffer.writeVarInt(registry.getId(object));
+  }
+
+  @Override
+  default Loadable<Set<T>> set(int minSize) {
+    return new SetLoadable.Ordered<>(this, minSize);
   }
 }

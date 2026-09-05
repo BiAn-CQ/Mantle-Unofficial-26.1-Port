@@ -19,6 +19,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CollectionLoadableTest {
   @Test
+  void orderedSetPreservesJsonOrderAndRemovesDuplicates() {
+    Loadable<Set<String>> loadable = new slimeknights.mantle.data.loadable.mapping.SetLoadable.Ordered<>(StringLoadable.DEFAULT, 1);
+    JsonArray json = new JsonArray();
+    json.add("zebra");
+    json.add("alpha");
+    json.add("zebra");
+    Set<String> parsed = loadable.convert(json, "values");
+    assertEquals(List.of("zebra", "alpha"), List.copyOf(parsed));
+    assertThrows(UnsupportedOperationException.class, () -> parsed.add("new"));
+    assertEquals(List.copyOf(parsed), List.copyOf(loadable.convert(loadable.serialize(parsed), "values")));
+  }
+
+  @Test
   void listRoundTripsJsonArray() {
     Loadable<List<Integer>> loadable = IntLoadable.ANY_FULL.list(0);
     JsonArray json = new JsonArray();

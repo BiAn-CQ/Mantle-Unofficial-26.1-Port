@@ -2,6 +2,7 @@ package slimeknights.mantle.util;
 
 import net.minecraft.core.DefaultedRegistry;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.material.Fluid;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;
+import java.util.List;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -104,11 +106,20 @@ public class RegistryHelper {
     return () -> registry.get(registry.getId(entry)).orElseThrow().value();
   }
 
-  /**
-   * Gets a holder from the dynamic registry access used by 26.1.
-   * This replaces the pre-26.1 call sites that passed registry access and a
-   * registry key to the old helper.
-   */
+  /** Checks whether entity values match a tag in both contents and display order. */
+  public static boolean isTagEquivalent(HolderSet.Named<EntityType<?>> tag, List<EntityType<?>> values) {
+    if (tag.size() != values.size()) {
+      return false;
+    }
+    for (int i = 0; i < tag.size(); i++) {
+      if (!values.get(i).equals(tag.get(i).value())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** Gets a holder from the dynamic registry access used by 26.1. */
   public static <T> Holder<T> getHolder(RegistryAccess access, ResourceKey<T> key) {
     return access.lookupOrThrow(key.registryKey()).getOrThrow(key);
   }
