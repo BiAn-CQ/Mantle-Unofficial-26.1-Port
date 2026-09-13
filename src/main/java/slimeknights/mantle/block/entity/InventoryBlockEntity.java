@@ -108,13 +108,19 @@ public abstract class InventoryBlockEntity extends NameableBlockEntity implement
     }
 
     ItemStack current = this.inventory.get(slot);
-    this.inventory.set(slot, itemstack);
-
-    if (!itemstack.isEmpty() && itemstack.getCount() > this.getMaxStackSize()) {
-      itemstack.setCount(this.getMaxStackSize());
-    }
+    setItemWithoutUpdate(slot, itemstack);
     if (!ItemStack.matches(current, itemstack)) {
       this.setChangedFast();
+    }
+  }
+
+  /** Writes a transactional slot without invoking dirty marks or subclass side effects. */
+  protected void setItemWithoutUpdate(int slot, ItemStack stack) {
+    if (slot >= 0 && slot < inventory.size()) {
+      inventory.set(slot, stack);
+      if (!stack.isEmpty() && stack.getCount() > getMaxStackSize()) {
+        stack.setCount(getMaxStackSize());
+      }
     }
   }
 
