@@ -33,11 +33,6 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.CraftingRecipe;
-import net.minecraft.world.item.crafting.CraftingInput;
-import net.minecraft.world.item.crafting.AbstractCookingRecipe;
-import net.minecraft.world.item.crafting.SingleRecipeInput;
-import net.minecraft.world.item.crafting.SingleItemRecipe;
 import net.neoforged.neoforge.common.conditions.NeverCondition;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import slimeknights.mantle.Mantle;
@@ -190,7 +185,7 @@ public class RemoveRecipesCommand {
           continue;
         }
         if (removeResult != null) {
-          Item result = getResultItem(recipe);
+          Item result = getResultItem(recipe, level);
         // result must match or not be requested
           if (result == null || !removeResult.test(result)) {
             continue;
@@ -244,15 +239,19 @@ public class RemoveRecipesCommand {
   }
 
   @Nullable
-  private static Item getResultItem(Recipe<?> recipe) {
-    if (recipe instanceof CraftingRecipe crafting) {
-      return crafting.assemble(CraftingInput.EMPTY).getItem();
+  private static Item getResultItem(Recipe<?> recipe, ServerLevel level) {
+    if (recipe instanceof slimeknights.mantle.recipe.ICommonRecipe<?> common) {
+      ItemStack result = common.getResultItem(level.registryAccess());
+      return result.isEmpty() ? null : result.getItem();
     }
-    if (recipe instanceof AbstractCookingRecipe cooking) {
-      return cooking.assemble(new SingleRecipeInput(ItemStack.EMPTY)).getItem();
-    }
-    if (recipe instanceof SingleItemRecipe singleItem) {
-      return singleItem.assemble(new SingleRecipeInput(ItemStack.EMPTY)).getItem();
+    // Display outputs are independent of crafting input, including smithing.
+    // Calling assemble with empty inputs breaks recipes such as decorated pots.
+    var context = net.minecraft.world.item.crafting.display.SlotDisplayContext.fromLevel(level);
+    for (var display : recipe.display()) {
+      ItemStack result = display.result().resolveForFirstStack(context);
+      if (!result.isEmpty()) {
+        return result.getItem();
+      }
     }
     return null;
   }

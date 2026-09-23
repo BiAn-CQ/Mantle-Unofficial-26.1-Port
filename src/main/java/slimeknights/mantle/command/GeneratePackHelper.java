@@ -1,6 +1,7 @@
 package slimeknights.mantle.command;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import net.minecraft.SharedConstants;
@@ -68,16 +69,16 @@ public class GeneratePackHelper {
     }
   }
 
-  /** Saves a JSON that removes the given resource using forge conditions */
+  /** Saves a JSON that removes the given resource using NeoForge conditions */
   public static boolean saveConditionRemove(Path path, String conditionKey) {
     JsonObject json = new JsonObject();
     json.add(conditionKey, JsonHelper.serializeConditions(NeverCondition.INSTANCE));
     return saveJson(json, path);
   }
 
-  /** Saves a JSON that removes the given resource using forge conditions */
+  /** Saves a JSON that removes the given resource using NeoForge conditions */
   public static boolean saveConditionRemove(Path path) {
-    return saveConditionRemove(path, "forge:conditions");
+    return saveConditionRemove(path, "neoforge:conditions");
   }
 
   /** Creates a mcmeta to make a valid pack */
@@ -86,7 +87,12 @@ public class GeneratePackHelper {
     JsonObject meta = new JsonObject();
     JsonObject pack = new JsonObject();
     pack.addProperty("description", description);
-    pack.addProperty("pack_format", SharedConstants.getCurrentVersion().packVersion(packType).major());
+    var format = SharedConstants.getCurrentVersion().packVersion(packType);
+    JsonArray minFormat = new JsonArray();
+    minFormat.add(format.major());
+    minFormat.add(format.minor());
+    pack.add("min_format", minFormat);
+    pack.addProperty("max_format", format.major());
     meta.add("pack", pack);
     saveJson(meta, path);
   }
