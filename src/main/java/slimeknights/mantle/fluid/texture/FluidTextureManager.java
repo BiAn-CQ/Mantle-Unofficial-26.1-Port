@@ -40,6 +40,7 @@ public class FluidTextureManager implements IEarlySafeManagerReloadListener {
   private static final FluidTextureManager INSTANCE = new FluidTextureManager();
   /** Stack-sensitive tint sources supplied by fluids whose color is not constant. */
   private static final Map<FluidType,FluidTintSource> TINT_SOURCES = new IdentityHashMap<>();
+  private static final java.util.Set<FluidType> TRANSLUCENT_TYPES = Collections.newSetFromMap(new IdentityHashMap<>());
   /** Map of fluid type to texture */
   private Map<FluidType,FluidTexture> textures = Collections.emptyMap();
   /** Fallback texture instance */
@@ -66,6 +67,11 @@ public class FluidTextureManager implements IEarlySafeManagerReloadListener {
     TINT_SOURCES.put(type, tintSource);
   }
 
+  /** Forces the world fluid model into the translucent layer, including opaque resource-pack textures. */
+  public static void registerTranslucent(FluidType type) {
+    TRANSLUCENT_TYPES.add(type);
+  }
+
   public static void registerModels(RegisterFluidModelsEvent event) {
     for (net.minecraft.world.level.material.Fluid fluid : BuiltInRegistries.FLUID) {
       FluidType type = fluid.getFluidType();
@@ -79,7 +85,8 @@ public class FluidTextureManager implements IEarlySafeManagerReloadListener {
       if (tint == null && data.color() != -1) {
         tint = FluidTintSources.constant(data.color());
       }
-      event.register(new FluidModel.Unbaked(new Material(data.still()), new Material(flowing), overlay, tint), fluid);
+      boolean translucent = TRANSLUCENT_TYPES.contains(type);
+      event.register(new FluidModel.Unbaked(new Material(data.still(), translucent), new Material(flowing, translucent), overlay, tint), fluid);
     }
   }
 
