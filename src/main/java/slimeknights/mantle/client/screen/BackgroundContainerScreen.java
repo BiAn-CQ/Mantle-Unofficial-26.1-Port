@@ -28,6 +28,7 @@ public class BackgroundContainerScreen<T extends AbstractContainerMenu> extends 
 
   @Override
   public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
+    super.extractBackground(graphics, mouseX, mouseY, partialTicks);
     graphics.blit(RenderPipelines.GUI_TEXTURED, this.background, this.leftPos, this.topPos,
       0, 0, this.imageWidth, this.imageHeight, 256, 256);
   }
