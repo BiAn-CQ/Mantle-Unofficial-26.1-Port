@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import org.joml.Vector3f;
 
+import java.util.List;
+
 @SuppressWarnings("WeakerAccess")
 public class RenderingHelper {
   /* Rotation */
@@ -110,10 +112,12 @@ public class RenderingHelper {
       // get the faucet data for the block
       i++;
       faucetFluid = FaucetFluid.REGISTRY.get(world.getBlockState(pos.below(i)));
+      List<FluidCuboid> cubes = faucetFluid.getFluids(direction);
+      if (cubes.isEmpty()) continue;
       // render all down cubes with the given offset
       matrices.pushPose();
       matrices.translate(0, -i, 0);
-      for (FluidCuboid cube : faucetFluid.getFluids(direction)) {
+      for (FluidCuboid cube : cubes) {
         FluidRenderer.renderCuboid(matrices, buffer, cube, still, flowing, cube.getFromScaled(), cube.getToScaled(), color, light, false);
       }
       matrices.popPose();

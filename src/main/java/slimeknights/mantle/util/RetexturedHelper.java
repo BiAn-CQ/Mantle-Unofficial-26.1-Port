@@ -90,7 +90,7 @@ public final class RetexturedHelper {
     if (!name.isEmpty()) {
       Identifier location = Identifier.tryParse(name);
       if (location != null) {
-        return BuiltInRegistries.BLOCK.get(Identifier.parse(name)).map(net.minecraft.core.Holder.Reference::value).orElse(Blocks.AIR);
+        return BuiltInRegistries.BLOCK.get(location).map(net.minecraft.core.Holder.Reference::value).orElse(Blocks.AIR);
       }
     }
     return Blocks.AIR;

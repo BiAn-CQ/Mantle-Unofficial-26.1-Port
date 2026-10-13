@@ -1,4 +1,5 @@
 {
+  "command.mantle.book.export.busy": "已有书籍正在导出，请稍候",
   "mantle:tooltip.cooktime": "烧炼时间：%ds",
   "config.mantle.extraHeartRenderer": "启用额外爱心渲染层",
 

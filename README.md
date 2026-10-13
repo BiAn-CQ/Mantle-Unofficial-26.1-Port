@@ -28,6 +28,8 @@ Linux/macOS：
 
 ## 上游与问题反馈
 
+本次同步范围与 26.1 适配记录见 [2026-10-13 上游同步说明](docs/upstream-sync-2026-10-13.md)。
+
 本项目基于 [SlimeKnights/Mantle](https://github.com/SlimeKnights/Mantle)和[zhuchuovo/Mantle-1.21.1](https://github.com/zhuchuovo/Mantle-1.21.1) 移植，
 不是 SlimeKnights 官方发布。请不要将本移植版的问题提交到上游仓库。
 

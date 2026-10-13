@@ -2,6 +2,7 @@ package slimeknights.mantle.data.loadable.common;
 
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonParseException;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -30,6 +31,6 @@ class IngredientLoadableTest {
     var legacy = JsonParser.parseString("{\"item\":\"minecraft:stone\"}");
 
     assertThatThrownBy(() -> IngredientLoadable.DISALLOW_EMPTY.convert(legacy, "ingredient"))
-      .isInstanceOf(RuntimeException.class);
+      .isInstanceOf(JsonParseException.class).hasMessageContaining("Invalid ingredient");
   }
 }

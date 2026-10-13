@@ -16,6 +16,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.item.crafting.RecipeMap;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -24,6 +25,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RecipesReceivedEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.event.RegisterFluidModelsEvent;
@@ -75,6 +78,23 @@ import java.util.Optional;
 
 @EventBusSubscriber(modid = Mantle.modId, value = Dist.CLIENT)
 public class ClientEvents {
+  private static RecipeMap syncedRecipes = RecipeMap.EMPTY;
+
+  /** Recipe instances synchronized by NeoForge, including special recipes omitted from vanilla displays. */
+  public static RecipeMap getSyncedRecipes() {
+    return syncedRecipes;
+  }
+
+  @SubscribeEvent(priority = EventPriority.HIGHEST)
+  static void recipesReceived(RecipesReceivedEvent event) {
+    syncedRecipes = event.getRecipeMap();
+  }
+
+  @SubscribeEvent
+  static void disconnected(ClientPlayerNetworkEvent.LoggingOut event) {
+    syncedRecipes = RecipeMap.EMPTY;
+  }
+
   private static final Identifier CROSSHAIR_ATTACK_BACKGROUND = Identifier.withDefaultNamespace("hud/crosshair_attack_indicator_background");
   private static final Identifier CROSSHAIR_ATTACK_PROGRESS = Identifier.withDefaultNamespace("hud/crosshair_attack_indicator_progress");
   private static final Identifier HOTBAR_ATTACK_BACKGROUND = Identifier.withDefaultNamespace("hud/hotbar_attack_indicator_background");

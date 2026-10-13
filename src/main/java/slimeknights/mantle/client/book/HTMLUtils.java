@@ -2,15 +2,26 @@ package slimeknights.mantle.client.book;
 
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.neoforged.neoforge.fluids.FluidStack;
+import org.apache.commons.lang3.mutable.MutableObject;
+import slimeknights.mantle.data.loadable.Loadables;
+import slimeknights.mantle.fluid.tooltip.FluidTooltipHandler;
 import slimeknights.mantle.util.html.HtmlElement;
 import slimeknights.mantle.util.html.HtmlGroup;
 import slimeknights.mantle.util.html.HtmlSerializable;
 import slimeknights.mantle.util.html.HtmlString;
 
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Helpers for converting to HTML.
@@ -95,14 +106,8 @@ public class HTMLUtils {
     return root;
   }
 
-  /**
-   * Decomposes a Component into styled inlined spans
-   *
-   * @param component Component
-   * @return HTML span tag
-   */
-  public static HtmlSerializable toHtml(Component component) {
-    Style style = component.getStyle();
+  /** Creates an element with the given style. */
+  private static HtmlGroup applyStyle(Style style) {
     // going to have a group of elements, just not sure what type yet
     HtmlGroup group;
     if (!style.isEmpty()) {
@@ -122,18 +127,72 @@ public class HTMLUtils {
     } else {
       group = HtmlGroup.inline();
     }
+    return group;
+  }
 
-    // add contents
-    String contents = MutableComponent.create(component.getContents()).getString();
-    // if we have newlines, put each element in its own span
-    if (contents.indexOf('\n') != -1) {
-      group.add(HtmlGroup.indent().add(Arrays.stream(contents.split("\n")).map(str -> HtmlElement.span().add(str))));
-    } else {
-      group.add(contents);
+  /** Decomposes a component, including translated arguments, into styled HTML spans. */
+  public static HtmlSerializable toHtml(Component component) {
+    HtmlGroup group = HtmlGroup.inline();
+    MutableObject<Style> lastStyle = new MutableObject<>(Style.EMPTY);
+    MutableObject<HtmlGroup> lastElement = new MutableObject<>(group);
+
+    component.visit((style, text) -> {
+      HtmlGroup nested = lastElement.getValue();
+      if (!style.equals(lastStyle.getValue())) {
+        nested = applyStyle(style);
+        group.add(nested);
+        lastStyle.setValue(style);
+        lastElement.setValue(nested);
+      }
+      if (text.indexOf('\n') != -1) {
+        nested.add(HtmlGroup.indent().add(Arrays.stream(text.split("\n")).map(line -> HtmlElement.span().add(line))));
+      } else {
+        nested.add(text);
+      }
+      return Optional.empty();
+    }, Style.EMPTY);
+
+    return group;
+  }
+
+  public static Stream<HtmlSerializable> toListItems(String[] lines) {
+    return toListItems(Arrays.stream(lines).map(HTMLUtils::parse));
+  }
+
+  public static Stream<HtmlSerializable> toListItems(List<Component> lines) {
+    return toListItems(lines.stream().map(HTMLUtils::toHtml));
+  }
+
+  public static Stream<HtmlSerializable> toListItems(Stream<HtmlSerializable> lines) {
+    return lines.map(line -> HtmlElement.li().add(HtmlElement.p().add(line)));
+  }
+
+  /** Serializes tooltip lines for {@link HtmlElement#minetip(HtmlSerializable)}. */
+  public static HtmlSerializable toTooltip(List<Component> components) {
+    HtmlGroup group = HtmlGroup.indent();
+    for (Component component : components) {
+      group.add(toHtml(component));
     }
-    // add children
-    group.add(component.getSiblings().stream().map(HTMLUtils::toHtml));
+    return group;
+  }
 
+  /** Creates an item tooltip for HTML export. */
+  public static HtmlSerializable itemTooltip(ItemStack stack) {
+    Minecraft minecraft = Minecraft.getInstance();
+    return toTooltip(stack.getTooltipLines(Item.TooltipContext.of(minecraft.level), minecraft.player, TooltipFlag.NORMAL));
+  }
+
+  /** Creates a fluid tooltip without the in-game shift-key prompt. */
+  @SuppressWarnings("deprecation")
+  public static HtmlSerializable fluidTooltip(FluidStack stack) {
+    HtmlGroup group = HtmlGroup.indent();
+    group.add(HtmlElement.span().add(toHtml(stack.getHoverName())));
+    List<Component> tooltip = new ArrayList<>();
+    FluidTooltipHandler.appendMaterialNoShift(stack.getFluid(), stack.getAmount(), tooltip);
+    tooltip.add(FluidTooltipHandler.formatModName(Loadables.FLUID.getKey(stack.getFluid())));
+    for (Component component : tooltip) {
+      group.add(toHtml(component));
+    }
     return group;
   }
 }

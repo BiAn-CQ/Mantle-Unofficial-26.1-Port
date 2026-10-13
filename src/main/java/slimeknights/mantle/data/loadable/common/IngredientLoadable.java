@@ -1,6 +1,7 @@
 package slimeknights.mantle.data.loadable.common;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.core.HolderSet;
@@ -72,7 +73,8 @@ public enum IngredientLoadable implements Loadable<Ingredient> {
     }
     DynamicOps<JsonElement> ops = registryLookup != null ? RegistryOps.create(JsonOps.INSTANCE, registryLookup)
       : RegistryOps.create(JsonOps.INSTANCE, registryAccess == null ? BUILTIN_REGISTRY_ACCESS : registryAccess);
-    return Ingredient.CODEC.parse(ops, element).getOrThrow();
+    return Ingredient.CODEC.parse(ops, element)
+      .getOrThrow(message -> new JsonParseException("Invalid " + key + ": " + message));
   }
 
   @Override

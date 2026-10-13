@@ -37,7 +37,7 @@ public interface JsonCodec<T> extends Codec<T> {
       try (IngredientLoadable.Scope ignored = IngredientLoadable.pushOps(ops)) {
         return DataResult.success(Pair.of(deserialize(ops.convertTo(JsonOps.INSTANCE, input), ops), input));
       }
-    } catch (JsonParseException e) {
+    } catch (JsonParseException | IllegalArgumentException e) {
       Mantle.logger.warn("Unable to decode {}", codecError(), e);
       return DataResult.error(e::getMessage);
     }

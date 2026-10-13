@@ -15,6 +15,8 @@ import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
@@ -123,6 +125,10 @@ public class Mantle {
     bus.addListener(EventPriority.NORMAL, false, RegisterPayloadHandlersEvent.class, NetworkWrapper::registerPayloads);
     MantleRecipes.init(bus);
     MantleIngredientTypes.init(bus);
+    // Vanilla only synchronizes recipe displays; multi-recipes need their recipe instances too.
+    NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, OnDatapackSyncEvent.class, event ->
+      event.sendRecipes(RecipeType.CRAFTING, RecipeType.SMELTING, RecipeType.SMOKING, RecipeType.BLASTING,
+        RecipeType.CAMPFIRE_COOKING, RecipeType.STONECUTTING, RecipeType.SMITHING));
     NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, PlayerInteractEvent.RightClickBlock.class, LecternBookItem::interactWithBlock);
 
     if (FMLEnvironment.getDist() == Dist.CLIENT) {
@@ -202,8 +208,6 @@ public class Mantle {
         LivingEntityPredicate.LOADER.register(getResource("sprinting"), LivingEntityPredicate.SPRINTING.getLoader());
         LivingEntityPredicate.LOADER.register(getResource("blocking"), LivingEntityPredicate.BLOCKING.getLoader());
         LivingEntityPredicate.LOADER.register(getResource("elytra_flying"), LivingEntityPredicate.ELYTRA_FLYING.getLoader());
-        LivingEntityPredicate.LOADER.register(getResource("has_effect"), HasMobEffectPredicate.LOADER);
-        LivingEntityPredicate.LOADER.register(getResource("block_at_entity"), BlockAtEntityPredicate.LOADER);
         LivingEntityPredicate.LOADER.register(getResource("eyes_in_water"), LivingEntityPredicate.EYES_IN_WATER.getLoader());
         LivingEntityPredicate.LOADER.register(getResource("feet_in_water"), LivingEntityPredicate.FEET_IN_WATER.getLoader());
         LivingEntityPredicate.LOADER.register(getResource("underwater"), LivingEntityPredicate.UNDERWATER.getLoader());
@@ -211,6 +215,8 @@ public class Mantle {
         // property
         LivingEntityPredicate.LOADER.register(getResource("mob_type"), MobTypePredicate.LOADER);
         LivingEntityPredicate.LOADER.register(getResource("has_enchantment"), HasEnchantmentEntityPredicate.LOADER);
+        LivingEntityPredicate.LOADER.register(getResource("has_effect"), HasMobEffectPredicate.LOADER);
+        LivingEntityPredicate.LOADER.register(getResource("block_at_entity"), BlockAtEntityPredicate.LOADER);
         // register mob types
         TagKey<EntityType<?>> undefined = TagKey.create(Registries.ENTITY_TYPE, getResource("undefined_mob_type"));
         MobTypePredicate.MOB_TYPES.register(Identifier.parse("undefined"), undefined);

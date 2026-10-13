@@ -33,8 +33,10 @@ public class FluidCuboid {
     Vector3fLoadable.INSTANCE.requiredField("to", FluidCuboid::getTo),
     Loadables.DIRECTION.mapWithValues(FluidFace.LOADABLE, 1).defaultField("faces", DEFAULT_FACES, FluidCuboid::getFaces),
     FluidCuboid::new);
-  /** Loader for a list of size 1 */
+  /** Loader for a list of size 1 or more */
   public static final Loadable<List<FluidCuboid>> LIST_LOADABLE = LOADABLE.list(CollectionLoadable.COMPACT);
+  /** Loader for a list of size 0 or more */
+  public static final Loadable<List<FluidCuboid>> EMPTY_LIST_LOADABLE = LOADABLE.list(CollectionLoadable.COMPACT_OR_EMPTY);
   /** Data loader to fetch a list of fluid cuboids from JSON */
   public static final BlockStateDataMapLoader<List<FluidCuboid>> REGISTRY = new BlockStateDataMapLoader<>("Block entity fluids", "mantle/model/block_fluids", LIST_LOADABLE);
 
@@ -49,9 +51,15 @@ public class FluidCuboid {
   private final Map<Direction, FluidFace> faces;
 
   protected FluidCuboid(Vector3f from, Vector3f to, Map<Direction, FluidFace> faces) {
+    this(from, to, faces, null, null);
+  }
+
+  private FluidCuboid(Vector3f from, Vector3f to, Map<Direction, FluidFace> faces, @Nullable Vector3f fromScaled, @Nullable Vector3f toScaled) {
     this.from = from;
     this.to = to;
     this.faces = faces;
+    this.fromScaled = fromScaled;
+    this.toScaled = toScaled;
   }
 
   /** Cache for scaled from */
@@ -93,6 +101,16 @@ public class FluidCuboid {
       toScaled.mul(1 / 16f);
     }
     return toScaled;
+  }
+
+  /** Creates a new fluid cuboid, replacing the start vector and invalidating its cache. */
+  public FluidCuboid withFrom(Vector3f from) {
+    return new FluidCuboid(from, to, faces, null, toScaled);
+  }
+
+  /** Creates a new fluid cuboid, replacing the end vector and invalidating its cache. */
+  public FluidCuboid withTo(Vector3f to) {
+    return new FluidCuboid(from, to, faces, fromScaled, null);
   }
 
   /** Represents a single fluid face in the model */
