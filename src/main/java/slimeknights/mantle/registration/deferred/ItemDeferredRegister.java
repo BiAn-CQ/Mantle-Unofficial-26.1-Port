@@ -83,27 +83,10 @@ public class ItemDeferredRegister extends DeferredRegisterWrapper<Item> {
   }
 
 
-  /* Specialty */
-
-  /**
-   * Registers an item with multiple variants, prefixing the name with the value name
-   * @param values   Enum values to use for this item
-   * @param name     Name of the block
-   * @param mapper   Function to get a item for the given enum value
-   * @return  EnumObject mapping between different item types
-   */
-  public <T extends Enum<T>, I extends Item> EnumObject<T,I> registerEnum(T[] values, String name, Function<T,? extends I> mapper) {
-    return registerEnum(values, name, (fullName, type) -> register(fullName, () -> mapper.apply(type)));
+  public <I extends Item> ItemObject<I> register(String name, Function<net.minecraft.resources.Identifier,? extends I> factory) {
+    return register(name, () -> factory.apply(resource(name)));
   }
-
-  /**
-   * Registers an item with multiple variants, suffixing the name with the value name
-   * @param values   Enum values to use for this item
-   * @param name     Name of the block
-   * @param mapper   Function to get a item for the given enum value
-   * @return  EnumObject mapping between different item types
-   */
-  public <T extends Enum<T>, I extends Item> EnumObject<T,I> registerEnum(String name, T[] values, Function<T,? extends I> mapper) {
-    return registerEnum(name, values, (fullName, type) -> register(fullName, () -> mapper.apply(type)));
+  @Override protected <I extends Item> Supplier<? extends I> registerMapped(String name, Function<net.minecraft.resources.Identifier,? extends I> factory) {
+    return register(name, factory);
   }
 }

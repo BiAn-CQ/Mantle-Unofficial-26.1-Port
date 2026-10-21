@@ -28,6 +28,7 @@ public class MantleRecipes {
   // crafting
   public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<ShapedFallbackRecipe>> CRAFTING_SHAPED_FALLBACK = RECIPES.register("crafting_shaped_fallback", () -> ShapedFallbackRecipe.SERIALIZER);
   public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<ShapedRetexturedRecipe>> CRAFTING_SHAPED_RETEXTURED = RECIPES.register("crafting_shaped_retextured", () -> ShapedRetexturedRecipe.SERIALIZER);
+  public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<slimeknights.mantle.recipe.crafting.fallback.ShapelessFallbackRecipe>> CRAFTING_SHAPELESS_FALLBACK = RECIPES.register("crafting_shapeless_fallback", () -> slimeknights.mantle.recipe.crafting.fallback.ShapelessFallbackRecipe.SERIALIZER);
   // cooking
   public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<SmeltingResultRecipe>> SMELTING = RECIPES.register("smelting", () -> SmeltingResultRecipe.SERIALIZER);
   public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<BlastingResultRecipe>> BLASTING = RECIPES.register("blasting", () -> BlastingResultRecipe.SERIALIZER);

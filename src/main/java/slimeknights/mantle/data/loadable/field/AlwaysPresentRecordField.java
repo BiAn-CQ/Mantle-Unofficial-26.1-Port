@@ -20,6 +20,10 @@ public interface AlwaysPresentRecordField<T,P> extends RecordField<T,P> {
 
   @Override
   default void encode(FriendlyByteBuf buffer, P parent) {
-    loadable().encode(buffer, getter().apply(parent));
+    encode(buffer, parent, TypedMap.EMPTY);
+  }
+
+  default void encode(FriendlyByteBuf buffer, P parent, TypedMap context) {
+    loadable().encode(buffer, getter().apply(parent), context);
   }
 }

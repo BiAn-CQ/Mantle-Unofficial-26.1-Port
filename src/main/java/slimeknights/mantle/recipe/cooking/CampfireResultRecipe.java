@@ -24,7 +24,7 @@ public class CampfireResultRecipe extends CampfireCookingRecipe implements Cooki
     Ingredient.CODEC.fieldOf("ingredient").forGetter(CampfireResultRecipe::input),
     ItemOutput.REQUIRED_STACK_CODEC.fieldOf("result").forGetter(CampfireResultRecipe::getResult),
     Codec.FLOAT.optionalFieldOf("experience", 0f).forGetter(CampfireResultRecipe::experience),
-    Codec.INT.optionalFieldOf("cookingtime", 600).forGetter(CampfireResultRecipe::cookingTime)
+    CookingResultRecipe.cookingTimeField(600).forGetter(CampfireResultRecipe::cookingTime)
   ).apply(instance, CampfireResultRecipe::new));
   public static final StreamCodec<RegistryFriendlyByteBuf, CampfireResultRecipe> STREAM_CODEC = StreamCodec.composite(
     Recipe.CommonInfo.STREAM_CODEC, recipe -> recipe.commonInfo,
@@ -39,11 +39,18 @@ public class CampfireResultRecipe extends CampfireCookingRecipe implements Cooki
   private final ItemOutput result;
   public CampfireResultRecipe(Recipe.CommonInfo commonInfo, AbstractCookingRecipe.CookingBookInfo bookInfo,
                               Ingredient ingredient, ItemOutput result, float experience, int cookingTime) {
-    super(commonInfo, bookInfo, ingredient, CookingResultRecipe.template(result), experience, cookingTime);
+    super(commonInfo, bookInfo, ingredient, null, experience, cookingTime);
     this.result = result;
   }
+  // The superclass stores a concrete template, while tag and datagen outputs resolve lazily.
+  // All result access is delegated here instead of populating its unused result field.
+  @Override protected net.minecraft.world.item.ItemStackTemplate result() { return CookingResultRecipe.template(result); }
+
   @Override public ItemOutput getResult() { return result; }
   @Override public ItemStack assemble(SingleRecipeInput input) { return result.copy(); }
+  @Override public java.util.List<net.minecraft.world.item.crafting.display.RecipeDisplay> display() {
+    return CookingResultRecipe.display(this,result,furnaceIcon());
+  }
   @Override @SuppressWarnings({"unchecked", "rawtypes"})
   public RecipeSerializer<CampfireCookingRecipe> getSerializer() { return (RecipeSerializer)MantleRecipes.CAMPFIRE.get(); }
 }

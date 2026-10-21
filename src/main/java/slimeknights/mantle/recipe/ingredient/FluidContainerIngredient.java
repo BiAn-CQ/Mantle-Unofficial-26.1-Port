@@ -39,8 +39,8 @@ import java.util.stream.Stream;
 
 /** Ingredient that matches a container of fluid */
 @SuppressWarnings("unused")
-public final class FluidContainerIngredient implements ICustomIngredient {
-  private static final Codec<FluidContainerIngredient> CODEC = new JsonCodec<>() {
+public class FluidContainerIngredient implements ICustomIngredient {
+  private static final Codec<FluidContainerIngredient> LEGACY_CODEC = new JsonCodec<>() {
     @Override
     public FluidContainerIngredient deserialize(JsonElement element, DynamicOps<?> ops) {
       if (!element.isJsonObject()) {
@@ -80,7 +80,7 @@ public final class FluidContainerIngredient implements ICustomIngredient {
     }
   };
 
-  public static final MapCodec<FluidContainerIngredient> MAP_CODEC = MapCodec.assumeMapUnsafe(CODEC);
+  public static final MapCodec<FluidContainerIngredient> MAP_CODEC = MapCodec.assumeMapUnsafe(LEGACY_CODEC);
   private static final StreamCodec<RegistryFriendlyByteBuf, Optional<Ingredient>> OPTIONAL_INGREDIENT_STREAM_CODEC =
     Ingredient.CONTENTS_STREAM_CODEC.apply(ByteBufCodecs::optional);
   public static final StreamCodec<RegistryFriendlyByteBuf, FluidContainerIngredient> STREAM_CODEC = StreamCodec.of(
@@ -96,7 +96,7 @@ public final class FluidContainerIngredient implements ICustomIngredient {
   private final FluidIngredient fluidIngredient;
   private final @Nullable Ingredient display;
 
-  private FluidContainerIngredient(FluidIngredient fluidIngredient, @Nullable Ingredient display) {
+  protected FluidContainerIngredient(FluidIngredient fluidIngredient, @Nullable Ingredient display) {
     this.fluidIngredient = fluidIngredient;
     this.display = display;
   }
@@ -129,8 +129,8 @@ public final class FluidContainerIngredient implements ICustomIngredient {
     }
     FluidStack contained = FluidUtil.getStack(handler, 0);
     Fluid fluid = contained.getFluid();
-    int amount = fluidIngredient.getAmount(fluid);
-    if (contained.isEmpty() || amount != contained.getAmount() || !fluidIngredient.test(fluid)) {
+    int amount = fluidIngredient.getAmount(contained);
+    if (contained.isEmpty() || amount != contained.getAmount() || !fluidIngredient.test(contained)) {
       return false;
     }
     try (Transaction transaction = Transaction.openRoot()) {

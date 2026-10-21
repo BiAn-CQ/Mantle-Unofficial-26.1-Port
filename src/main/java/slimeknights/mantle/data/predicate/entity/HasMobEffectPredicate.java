@@ -11,7 +11,7 @@ import slimeknights.mantle.data.predicate.IJsonPredicate;
  * Predicate that checks if an entity has the given mob effect.
  */
 public record HasMobEffectPredicate(MobEffect effect) implements LivingEntityPredicate {
-  public static final RecordLoadable<HasMobEffectPredicate> LOADER = RecordLoadable.create(Loadables.MOB_EFFECT.requiredField("effect", HasMobEffectPredicate::effect), HasMobEffectPredicate::new);
+  public static final RecordLoadable<HasMobEffectPredicate> LOADER = RecordLoadable.create(Loadables.MOB_EFFECT_VALUE.requiredField("effect", HasMobEffectPredicate::effect), HasMobEffectPredicate::new);
 
   @Override
   public boolean matches(LivingEntity living) {

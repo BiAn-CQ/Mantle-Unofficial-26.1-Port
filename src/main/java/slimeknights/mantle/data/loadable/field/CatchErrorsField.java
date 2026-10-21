@@ -34,7 +34,11 @@ public record CatchErrorsField<T,P>(LoadableField<T,P> nested, @Nullable T value
 
   @Override
   public void serialize(P parent, JsonObject json) {
-    nested.serialize(parent, json);
+    serialize(parent, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(P parent, JsonObject json, TypedMap context) {
+    nested.serialize(parent, json, context);
   }
 
   @Override
@@ -45,6 +49,10 @@ public record CatchErrorsField<T,P>(LoadableField<T,P> nested, @Nullable T value
 
   @Override
   public void encode(FriendlyByteBuf buffer, P parent) {
-    nested.encode(buffer, parent);
+    encode(buffer, parent, TypedMap.EMPTY);
+  }
+
+  public void encode(FriendlyByteBuf buffer, P parent, TypedMap context) {
+    nested.encode(buffer, parent, context);
   }
 }

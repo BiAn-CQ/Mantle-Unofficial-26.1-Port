@@ -54,7 +54,41 @@ public abstract class EntityIngredient implements Predicate<EntityType<?>>, IAmL
   /** Loadable disallows nested lists, just handles nested tags and sets */
   private static final Loadable<Compound> COMPOUND = EntityIngredient.loadableBuilder().build(SET_MATCH).list(2).flatXmap(Compound::new, c -> c.ingredients);
   /** Loadable for any fluid ingredient */
-  public static final Loadable<EntityIngredient> LOADABLE = loadableBuilder().array(COMPOUND).build(SET_MATCH);
+  private static final Loadable<EntityIngredient> LEGACY_LOADABLE = loadableBuilder().array(COMPOUND).build(SET_MATCH);
+  public static final com.mojang.serialization.Codec<EntityIngredient> CODEC = slimeknights.mantle.data.codec.MantleCodecs.ENTITY_SET.xmap(EntityIngredient::of, EntityIngredient::holderSet);
+  public static final net.minecraft.network.codec.StreamCodec<net.minecraft.network.RegistryFriendlyByteBuf,EntityIngredient> STREAM_CODEC = slimeknights.mantle.network.codec.MantleStreamCodecs.ENTITY_SET.map(EntityIngredient::of, EntityIngredient::holderSet);
+  private static final Loadable<EntityIngredient> NATIVE_LOADABLE = new slimeknights.mantle.data.loadable.common.RegistryCodecLoadable<>(CODEC, STREAM_CODEC);
+  public static final Loadable<EntityIngredient> LOADABLE = new Loadable<>() {
+    @Override
+    public EntityIngredient convert(JsonElement json, String key, slimeknights.mantle.util.typed.TypedMap context) {
+      if (json.isJsonObject() && (json.getAsJsonObject().has("type") || json.getAsJsonObject().has("types") || json.getAsJsonObject().has("tag"))
+          || json.isJsonArray() && !json.getAsJsonArray().isEmpty() && json.getAsJsonArray().get(0).isJsonObject()) {
+        return LEGACY_LOADABLE.convert(json, key, context);
+      }
+      return NATIVE_LOADABLE.convert(json, key, context);
+    }
+    @Override public JsonElement serialize(EntityIngredient value) { return serialize(value, slimeknights.mantle.util.typed.TypedMap.EMPTY); }
+    @Override public JsonElement serialize(EntityIngredient value, slimeknights.mantle.util.typed.TypedMap context) { return NATIVE_LOADABLE.serialize(value, context); }
+    @Override public EntityIngredient decode(FriendlyByteBuf buffer, slimeknights.mantle.util.typed.TypedMap context) { return NATIVE_LOADABLE.decode(buffer, context); }
+    @Override public void encode(FriendlyByteBuf buffer, EntityIngredient value) { NATIVE_LOADABLE.encode(buffer, value); }
+  };
+
+  public static EntityIngredient of(net.minecraft.core.HolderSet<EntityType<?>> holders) { return new HolderMatch(holders); }
+  public static EntityIngredient of(List<EntityType<?>> types) { return of(ImmutableSet.copyOf(types)); }
+  public boolean test(net.minecraft.world.entity.Entity entity) { return test(entity.getType()); }
+  public net.minecraft.core.HolderSet<EntityType<?>> holderSet() {
+    if (this instanceof HolderMatch holder) { return holder.entities; }
+    if (this instanceof TagMatch tagged) { return IngredientHelper.tagSet(BuiltInRegistries.ENTITY_TYPE, tagged.tag); }
+    return net.minecraft.core.HolderSet.direct(getTypes().stream().map(EntityType::builtInRegistryHolder).toList());
+  }
+
+  private static class HolderMatch extends EntityIngredient {
+    private final net.minecraft.core.HolderSet<EntityType<?>> entities;
+    HolderMatch(net.minecraft.core.HolderSet<EntityType<?>> entities) { this.entities = entities; }
+    @Override public boolean test(EntityType<?> type) { return entities.contains(type.builtInRegistryHolder()); }
+    @Override public Set<EntityType<?>> getTypes() { return entities.stream().map(net.minecraft.core.Holder::value).collect(ImmutableSet.toImmutableSet()); }
+    @Override public Loadable<? extends EntityIngredient> loadable() { return LOADABLE; }
+  }
 
   /* Constructors */
 
@@ -80,11 +114,11 @@ public abstract class EntityIngredient implements Predicate<EntityType<?>>, IAmL
 
   /** Creates an ingredient from a list of ingredients */
   public static EntityIngredient of(EntityIngredient... ingredients) {
-    return of(List.of(ingredients));
+    return compound(List.of(ingredients));
   }
 
   /** Creates an ingredient from a list of ingredients */
-  private static EntityIngredient of(List<EntityIngredient> ingredients) {
+  private static EntityIngredient compound(List<EntityIngredient> ingredients) {
     if (ingredients.isEmpty()) {
       return EMPTY;
     }

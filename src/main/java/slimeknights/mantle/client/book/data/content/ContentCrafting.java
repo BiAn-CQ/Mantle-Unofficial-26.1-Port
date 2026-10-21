@@ -17,6 +17,9 @@ import net.minecraft.world.item.crafting.display.RecipeDisplay;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import org.apache.commons.lang3.StringUtils;
 import slimeknights.mantle.Mantle;
+import slimeknights.mantle.client.ClientEvents;
+import net.minecraft.world.item.crafting.RecipeMap;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 import slimeknights.mantle.client.book.data.BookData;
 import slimeknights.mantle.client.book.data.BookLoadException;
 import slimeknights.mantle.client.book.data.element.ImageData;
@@ -119,42 +122,57 @@ public class ContentCrafting extends PageContent {
   @SuppressWarnings("deprecation")
   public void load() {
     super.load();
-    if (!StringUtils.isEmpty(recipe) && Identifier.tryParse(recipe) != null) {
-      MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
-      if (server != null) {
-        RecipeHolder<?> holder = server.getRecipeManager().byKey(ResourceKey.create(Registries.RECIPE, Identifier.parse(recipe))).orElse(null);
-        Recipe<?> loadedRecipe = holder.value();
-        if (loadedRecipe instanceof CraftingRecipe crafting && !crafting.display().isEmpty()) {
-          RecipeDisplay display = crafting.display().getFirst();
-          if (loadedRecipe instanceof ShapedRecipe shaped) {
-            if (grid_size.equalsIgnoreCase("auto")) {
-              grid_size = shaped.getWidth() <= 2 && shaped.getHeight() <= 2 ? "small" : "large";
-            }
-            int width = shaped.getWidth();
-            int height = shaped.getHeight();
-            grid = new IngredientData[height][width];
-            List<Optional<Ingredient>> ingredients = shaped.getIngredients();
-            for (int y = 0; y < height; y++) {
-              for (int x = 0; x < width; x++) {
-                Optional<Ingredient> ingredient = ingredients.get(x + y * width);
-                if (ingredient.isPresent()) {
-                  grid[y][x] = fromIngredient(ingredient.get());
-                }
-              }
-            }
-          } else {
-            List<Ingredient> ingredients = crafting.placementInfo().ingredients();
-            grid = new IngredientData[1][Math.max(1, ingredients.size())];
-            for (int i = 0; i < ingredients.size(); i++) {
-              grid[0][i] = fromIngredient(ingredients.get(i));
-            }
-          }
-          List<ItemStack> resultStacks = display.result().resolveForStacks(ContextMap.EMPTY);
-          if (!resultStacks.isEmpty()) {
-            result = IngredientData.getItemStackData(NonNullList.of(ItemStack.EMPTY, resultStacks.toArray(ItemStack[]::new)));
+    Identifier id = recipe == null ? null : Identifier.tryParse(recipe);
+    if (id == null) {
+      return;
+    }
+    Minecraft minecraft = Minecraft.getInstance();
+    MinecraftServer server = minecraft.getSingleplayerServer();
+    RecipeMap recipes = server != null ? server.getRecipeManager().recipeMap() : ClientEvents.getSyncedRecipes();
+    RecipeHolder<?> holder = recipes.byKey(ResourceKey.create(Registries.RECIPE, id));
+    if (holder == null || !(holder.value() instanceof CraftingRecipe crafting) || crafting.display().isEmpty()) {
+      return;
+    }
+    List<Ingredient> ingredients = crafting.placementInfo().ingredients();
+    boolean fitsSmall = crafting instanceof ShapedRecipe shaped
+      ? shaped.getWidth() <= 2 && shaped.getHeight() <= 2 : ingredients.size() <= 4;
+    if (grid_size.equalsIgnoreCase("auto")) {
+      grid_size = fitsSmall ? "small" : "large";
+    }
+    int size = switch (grid_size.toLowerCase(java.util.Locale.ROOT)) {
+      case "small" -> 2;
+      case "large" -> 3;
+      default -> throw new BookLoadException("Invalid grid size: " + grid_size);
+    };
+    if (crafting instanceof ShapedRecipe shaped) {
+      int width = shaped.getWidth();
+      int height = shaped.getHeight();
+      if (width > size || height > size) {
+        throw new BookLoadException("Recipe " + recipe + " cannot fit in a " + size + "x" + size + " crafting grid");
+      }
+      grid = new IngredientData[height][width];
+      List<Optional<Ingredient>> shapedIngredients = shaped.getIngredients();
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          Optional<Ingredient> ingredient = shapedIngredients.get(x + y * width);
+          if (ingredient.isPresent()) {
+            grid[y][x] = fromIngredient(ingredient.get());
           }
         }
       }
+    } else {
+      if (ingredients.size() > size * size) {
+        throw new BookLoadException("Recipe " + recipe + " cannot fit in a " + size + "x" + size + " crafting grid");
+      }
+      grid = new IngredientData[size][size];
+      for (int i = 0; i < ingredients.size(); i++) {
+        grid[i / size][i % size] = fromIngredient(ingredients.get(i));
+      }
+    }
+    RecipeDisplay display = crafting.display().getFirst();
+    List<ItemStack> resultStacks = display.result().resolveForStacks(minecraft.level == null ? ContextMap.EMPTY : SlotDisplayContext.fromLevel(minecraft.level));
+    if (!resultStacks.isEmpty()) {
+      result = IngredientData.getItemStackData(NonNullList.of(ItemStack.EMPTY, resultStacks.toArray(ItemStack[]::new)));
     }
   }
 

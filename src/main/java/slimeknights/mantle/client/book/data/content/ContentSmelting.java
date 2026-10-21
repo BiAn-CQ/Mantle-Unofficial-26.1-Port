@@ -21,6 +21,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import org.apache.commons.lang3.StringUtils;
 import slimeknights.mantle.Mantle;
+import slimeknights.mantle.client.ClientEvents;
+import net.minecraft.world.item.crafting.RecipeMap;
+import net.minecraft.world.item.crafting.display.SlotDisplayContext;
 import slimeknights.mantle.client.book.data.BookData;
 import slimeknights.mantle.client.book.data.element.ImageData;
 import slimeknights.mantle.client.book.data.element.IngredientData;
@@ -136,23 +139,25 @@ public class ContentSmelting extends PageContent {
   @SuppressWarnings("deprecation")
   public void load() {
     super.load();
-    if (!StringUtils.isEmpty(this.recipe) && Identifier.tryParse(this.recipe) != null) {
-      MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
-      if (server != null) {
-        RecipeHolder<?> holder = server.getRecipeManager().byKey(ResourceKey.create(Registries.RECIPE, Identifier.parse(this.recipe))).orElse(null);
-        Recipe<?> loadedRecipe = holder.value();
-        if (loadedRecipe instanceof AbstractCookingRecipe cooking && !cooking.display().isEmpty()) {
-          this.input = fromIngredient(cooking.input());
-          RecipeDisplay display = cooking.display().getFirst();
-          if (display instanceof FurnaceRecipeDisplay furnace) {
-            java.util.List<ItemStack> resultStacks = furnace.result().resolveForStacks(ContextMap.EMPTY);
-            if (!resultStacks.isEmpty()) {
-              this.result = IngredientData.getItemStackData(NonNullList.of(ItemStack.EMPTY, resultStacks.toArray(ItemStack[]::new)));
-            }
-            this.cookTime = furnace.duration();
-          }
-        }
+    Identifier id = recipe == null ? null : Identifier.tryParse(recipe);
+    if (id == null) {
+      return;
+    }
+    Minecraft minecraft = Minecraft.getInstance();
+    MinecraftServer server = minecraft.getSingleplayerServer();
+    RecipeMap recipes = server != null ? server.getRecipeManager().recipeMap() : ClientEvents.getSyncedRecipes();
+    RecipeHolder<?> holder = recipes.byKey(ResourceKey.create(Registries.RECIPE, id));
+    if (holder == null || !(holder.value() instanceof AbstractCookingRecipe cooking) || cooking.display().isEmpty()) {
+      return;
+    }
+    input = fromIngredient(cooking.input());
+    RecipeDisplay display = cooking.display().getFirst();
+    if (display instanceof FurnaceRecipeDisplay furnace) {
+      List<ItemStack> resultStacks = furnace.result().resolveForStacks(minecraft.level == null ? ContextMap.EMPTY : SlotDisplayContext.fromLevel(minecraft.level));
+      if (!resultStacks.isEmpty()) {
+        result = IngredientData.getItemStackData(NonNullList.of(ItemStack.EMPTY, resultStacks.toArray(ItemStack[]::new)));
       }
+      cookTime = furnace.duration();
     }
   }
 

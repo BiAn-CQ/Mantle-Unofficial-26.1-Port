@@ -2,6 +2,9 @@ package slimeknights.mantle.fluid.tooltip;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import slimeknights.mantle.data.loadable.primitive.IntLoadable;
+import slimeknights.mantle.data.loadable.primitive.StringLoadable;
+import slimeknights.mantle.data.loadable.record.RecordLoadable;
 
 import java.util.List;
 
@@ -10,6 +13,9 @@ import java.util.List;
  */
 @SuppressWarnings("ClassCanBeRecord") // needed in GSON
 public class FluidUnit {
+  public static final RecordLoadable<FluidUnit> LOADABLE = RecordLoadable.create(
+    StringLoadable.DEFAULT.requiredField("key", FluidUnit::key),
+    IntLoadable.FROM_ONE.requiredField("needed", FluidUnit::needed), FluidUnit::new);
 
   private final String key;
   private final int needed;
@@ -17,6 +23,14 @@ public class FluidUnit {
   public FluidUnit(String key, int needed) {
     this.key = key;
     this.needed = needed;
+  }
+
+  public String key() {
+    return key;
+  }
+
+  public int needed() {
+    return needed;
   }
 
   /**

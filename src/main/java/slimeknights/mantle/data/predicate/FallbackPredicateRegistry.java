@@ -101,6 +101,18 @@ public class FallbackPredicateRegistry<T,F> extends PredicateRegistry<T> {
     }
   }
 
+  @Override
+  @SuppressWarnings("unchecked")
+  public JsonElement serialize(IJsonPredicate<T> value, TypedMap context) {
+    return value instanceof NestedPredicate<?> nested ? fallback.serialize(((NestedPredicate<F>)nested).predicate(), context) : super.serialize(value, context);
+  }
+  @Override
+  @SuppressWarnings("unchecked")
+  public void serialize(IJsonPredicate<T> value, JsonObject json, TypedMap context) {
+    if (value instanceof NestedPredicate<?> nested) { fallback.serialize(((NestedPredicate<F>)nested).predicate(), json, context); }
+    else { super.serialize(value, json, context); }
+  }
+
   /** Helper interface to make the cast work */
   private interface NestedPredicate<F> {
     IJsonPredicate<F> predicate();

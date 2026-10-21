@@ -3,12 +3,10 @@ package slimeknights.mantle.data.loadable.common;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.mojang.serialization.JsonOps;
-import io.netty.handler.codec.DecoderException;
-import io.netty.handler.codec.EncoderException;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import slimeknights.mantle.data.loadable.Loadable;
 import slimeknights.mantle.util.typed.TypedMap;
 
@@ -26,21 +24,13 @@ public record GsonLoadable<T>(Gson gson, Class<T> classType) implements Loadable
 
   @Override
   public T decode(FriendlyByteBuf buffer, TypedMap context) {
-    CompoundTag tag = buffer.readNbt();
-    if (tag != null) {
-      return gson.fromJson(NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE, tag), classType);
-    }
-    throw new DecoderException("Failed to decode: " + classType.getSimpleName());
+    Tag tag = ByteBufCodecs.TAG.decode(buffer);
+    return gson.fromJson(NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE, tag), classType);
   }
 
   @Override
   public void encode(FriendlyByteBuf buffer, T object) {
-    // TODO: do we need to support lists here? probably not as loadable gives us lists
     Tag tag = JsonOps.INSTANCE.convertTo(NbtOps.INSTANCE, gson.toJsonTree(object, classType));
-    if (tag.getId() == Tag.TAG_COMPOUND) {
-      buffer.writeNbt((CompoundTag)tag);
-    } else {
-      throw new EncoderException("Serialized wrong NBT tag type " + tag);
-    }
+    ByteBufCodecs.TAG.encode(buffer, tag);
   }
 }

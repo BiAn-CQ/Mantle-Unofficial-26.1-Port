@@ -63,7 +63,8 @@ public final class RetexturedHelper {
    * @return  Texture, or empty string if none
    */
   public static String getTextureName(ItemStack stack) {
-    return getTextureName(stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag());
+    Block texture = stack.get(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get());
+    return texture == null ? getTextureName(stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag()) : getTextureName(texture);
   }
 
   /**
@@ -129,6 +130,8 @@ public final class RetexturedHelper {
    * @return The item stack with the proper NBT
    */
   public static ItemStack setTexture(ItemStack stack, String name) {
+    if (name.isEmpty()) { stack.remove(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get()); }
+    else { stack.set(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get(), getBlock(name)); }
     CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> setTexture(tag, name));
     return stack;
   }
@@ -231,5 +234,13 @@ public final class RetexturedHelper {
       }
     }
     return added;
+  }
+
+  public static void copyTexture(net.minecraft.core.component.DataComponentHolder source, net.neoforged.neoforge.common.MutableDataComponentHolder target) {
+    Block texture = source.get(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get());
+    if (texture != null) { target.set(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get(), texture); }
+  }
+  public static net.minecraft.world.level.storage.loot.functions.CopyComponentsFunction.Builder copyTexture() {
+    return net.minecraft.world.level.storage.loot.functions.CopyComponentsFunction.copyComponentsFromBlockEntity(net.minecraft.world.level.storage.loot.parameters.LootContextParams.BLOCK_ENTITY).include(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get());
   }
 }

@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * @param <I>  Entry type
  */
 @SuppressWarnings({"unused", "WeakerAccess"})
-public class EnumObject<T extends Enum<T>, I> implements MultiObject<I> {
+public class EnumObject<T extends Enum<T>, I> implements MultiObject.Holders<I> {
   /** Singleton empty object, type does not matter as it has no items */
   @SuppressWarnings({"rawtypes", "unchecked"})
   private static final EnumObject EMPTY = new EnumObject(Collections.emptyMap());
@@ -58,6 +58,23 @@ public class EnumObject<T extends Enum<T>, I> implements MultiObject<I> {
     return Objects.requireNonNull(supplier.get(), () -> "No enum object value for " + value);
   }
 
+  @SuppressWarnings("unchecked")
+  public net.minecraft.core.Holder<I> getHolder(T value) {
+    var holder = getHolderOrNull(value);
+    if (holder == null) { throw new NoSuchElementException("Missing key " + value); }
+    return holder;
+  }
+  @Nullable
+  @SuppressWarnings("unchecked")
+  public net.minecraft.core.Holder<I> getHolderOrNull(T value) {
+    Supplier<? extends I> supplier = map.get(value);
+    if (supplier == null) { return null; }
+    if (supplier instanceof net.minecraft.core.Holder<?> holder) { return (net.minecraft.core.Holder<I>)holder; }
+    if (supplier instanceof ItemObject<?> item) { return (net.minecraft.core.Holder<I>)item.getHolder(); }
+    I resolved = getOrNull(value);
+    return resolved == null ? null : net.minecraft.core.Holder.direct(resolved);
+  }
+
   /**
    * Gets the value for the given enum, or null if the key is missing
    * @param value  Key to get
@@ -88,6 +105,10 @@ public class EnumObject<T extends Enum<T>, I> implements MultiObject<I> {
   /** Gets all present keys for this object */
   public Collection<T> keys() {
     return this.map.keySet();
+  }
+
+  @Override public Collection<net.minecraft.core.Holder<I>> holders() {
+    return map.keySet().stream().map(this::getHolder).toList();
   }
 
   /** Gets the set of entries for this object */
@@ -132,6 +153,14 @@ public class EnumObject<T extends Enum<T>, I> implements MultiObject<I> {
   @Override
   public void forEach(Consumer<? super I> consumer) {
     forEach((k, v) -> consumer.accept(v));
+  }
+
+  /** Generates a holder-preserving enum object without resolving its registry entries. */
+  public static <E extends Enum<E>,I> EnumObject<E,I> generate(E[] values, java.util.function.Function<E,? extends Supplier<? extends I>> factory) {
+    if (values.length == 0) throw new IllegalArgumentException("Must have at least one value");
+    Builder<E,I> builder = new Builder<>(values[0].getDeclaringClass());
+    for (E value : values) builder.put(value, factory.apply(value));
+    return builder.build();
   }
 
   /**

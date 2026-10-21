@@ -30,6 +30,7 @@ import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import slimeknights.mantle.client.model.util.ModelHelper;
 import slimeknights.mantle.data.loadable.common.GsonLoadable;
+import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.data.loadable.common.CodecLoadable;
 import slimeknights.mantle.data.loadable.common.LazyRegistryLoadable;
 import slimeknights.mantle.data.loadable.common.RegistryLoadable;
@@ -55,21 +56,40 @@ public class Loadables {
   public static final IdentifierLoadable<SoundEvent> SOUND_EVENT = new RegistryLoadable<>(BuiltInRegistries.SOUND_EVENT);
   public static final IdentifierLoadable<Fluid> FLUID = new RegistryLoadable<>(BuiltInRegistries.FLUID);
   public static final IdentifierLoadable<FluidType> FLUID_TYPE = new LazyRegistryLoadable<>(NeoForgeRegistries.Keys.FLUID_TYPES);
-  public static final IdentifierLoadable<MobEffect> MOB_EFFECT = new RegistryLoadable<>(BuiltInRegistries.MOB_EFFECT);
+  public static final IdentifierLoadable<MobEffect> MOB_EFFECT_VALUE = new RegistryLoadable<>(BuiltInRegistries.MOB_EFFECT);
   public static final IdentifierLoadable<Block> BLOCK = new RegistryLoadable<>(BuiltInRegistries.BLOCK);
-  public static final IdentifierLoadable<Enchantment> ENCHANTMENT = new LazyRegistryLoadable<>(Registries.ENCHANTMENT);
+  public static final IdentifierLoadable<Enchantment> ENCHANTMENT_VALUE = new LazyRegistryLoadable<>(Registries.ENCHANTMENT);
   public static final IdentifierLoadable<EntityType<?>> ENTITY_TYPE = new RegistryLoadable<>(BuiltInRegistries.ENTITY_TYPE);
   public static final IdentifierLoadable<Item> ITEM = new RegistryLoadable<>(BuiltInRegistries.ITEM);
+  public static final IdentifierLoadable<net.minecraft.core.component.DataComponentType<?>> DATA_COMPONENT_TYPE = new RegistryLoadable<>(BuiltInRegistries.DATA_COMPONENT_TYPE);
   public static final IdentifierLoadable<Potion> POTION = new RegistryLoadable<>(BuiltInRegistries.POTION);
   public static final IdentifierLoadable<ParticleType<?>> PARTICLE_TYPE = new RegistryLoadable<>(BuiltInRegistries.PARTICLE_TYPE);
   public static final IdentifierLoadable<BlockEntityType<?>> BLOCK_ENTITY_TYPE = new RegistryLoadable<>(BuiltInRegistries.BLOCK_ENTITY_TYPE);
-  public static final IdentifierLoadable<Attribute> ATTRIBUTE = new RegistryLoadable<>(BuiltInRegistries.ATTRIBUTE);
+  public static final IdentifierLoadable<Attribute> ATTRIBUTE_VALUE = new RegistryLoadable<>(BuiltInRegistries.ATTRIBUTE);
   public static final IdentifierLoadable<RecipeType<?>> RECIPE_TYPE = new RegistryLoadable<>(BuiltInRegistries.RECIPE_TYPE);
 
   /* Non-default registries */
   public static final StringLoadable<Fluid> NON_EMPTY_FLUID = notValue(FLUID, Fluids.EMPTY, "Fluid cannot be empty");
   public static final StringLoadable<Block> NON_EMPTY_BLOCK = notValue(BLOCK, Blocks.AIR, "Block cannot be air");
   public static final StringLoadable<Item> NON_EMPTY_ITEM = notValue(ITEM, Items.AIR, "Item cannot be empty");
+
+  public static final StringLoadable<ItemAbility> ITEM_ABILITY = TOOL_ACTION;
+  public static final Loadable<net.minecraft.core.HolderSet<Item>> ITEM_SET = new slimeknights.mantle.data.loadable.common.RegistryCodecLoadable<>(
+    slimeknights.mantle.data.codec.MantleCodecs.ITEM_SET, slimeknights.mantle.network.codec.MantleStreamCodecs.ITEM_SET);
+  public static final Loadable<net.minecraft.core.HolderSet<Fluid>> FLUID_SET = new slimeknights.mantle.data.loadable.common.RegistryCodecLoadable<>(
+    slimeknights.mantle.data.codec.MantleCodecs.FLUID_SET, slimeknights.mantle.network.codec.MantleStreamCodecs.FLUID_SET);
+  public static final slimeknights.mantle.data.loadable.registry.HolderLoadable<Attribute> ATTRIBUTE = new slimeknights.mantle.data.loadable.registry.RegistryHolderLoadable<>(BuiltInRegistries.ATTRIBUTE);
+  public static final slimeknights.mantle.data.loadable.registry.HolderLoadable<MobEffect> MOB_EFFECT = new slimeknights.mantle.data.loadable.registry.RegistryHolderLoadable<>(BuiltInRegistries.MOB_EFFECT);
+  public static final slimeknights.mantle.data.loadable.registry.HolderLoadable<Enchantment> ENCHANTMENT = new slimeknights.mantle.data.loadable.registry.DatapackRegistryLoadable<>(Registries.ENCHANTMENT);
+  public static final slimeknights.mantle.data.loadable.registry.HolderLoadable<net.minecraft.world.damagesource.DamageType> DAMAGE_TYPE = new slimeknights.mantle.data.loadable.registry.DatapackRegistryLoadable<>(Registries.DAMAGE_TYPE);
+  public static final Loadable<net.minecraft.core.component.DataComponentPatch> DATA_COMPONENTS = new CodecLoadable.Registry<>(net.minecraft.core.component.DataComponentPatch.CODEC, net.minecraft.core.component.DataComponentPatch.STREAM_CODEC);
+  public static final Loadable<net.minecraft.world.item.crafting.Ingredient> ITEM_INGREDIENT = IngredientLoadable.ALLOW_EMPTY;
+  public static final Loadable<net.minecraft.world.item.crafting.Ingredient> ITEM_INGREDIENT_NONEMPTY = IngredientLoadable.DISALLOW_EMPTY;
+  public static final Loadable<net.neoforged.neoforge.common.crafting.SizedIngredient> SIZED_ITEM_INGREDIENT = new CodecLoadable.Registry<>(net.neoforged.neoforge.common.crafting.SizedIngredient.NESTED_CODEC, net.neoforged.neoforge.common.crafting.SizedIngredient.STREAM_CODEC);
+  public static final Loadable<net.neoforged.neoforge.fluids.crafting.FluidIngredient> FLUID_INGREDIENT = new CodecLoadable.Registry<>(net.neoforged.neoforge.fluids.crafting.FluidIngredient.CODEC, net.neoforged.neoforge.fluids.crafting.FluidIngredient.STREAM_CODEC);
+  public static final Loadable<net.neoforged.neoforge.fluids.crafting.FluidIngredient> FLUID_INGREDIENT_NONEMPTY = FLUID_INGREDIENT;
+  public static final Loadable<net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient> SIZED_FLUID_INGREDIENT = new CodecLoadable.Registry<>(net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient.CODEC, net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient.STREAM_CODEC);
+  public static final EnumLoadable<net.minecraft.world.item.ItemDisplayContext> ITEM_DISPLAY_CONTEXT = new EnumLoadable<>(net.minecraft.world.item.ItemDisplayContext.class);
 
   /* Tag keys */
   public static final StringLoadable<TagKey<Fluid>> FLUID_TAG = tagKey(Registries.FLUID);

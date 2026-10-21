@@ -21,7 +21,11 @@ public record RequiredField<T,P>(Loadable<T> loadable, String key, boolean seria
 
   @Override
   public void serialize(P parent, JsonObject json) {
-    JsonElement element = loadable.serialize(getter.apply(parent));
+    serialize(parent, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(P parent, JsonObject json, TypedMap context) {
+    JsonElement element = loadable.serialize(getter.apply(parent), context);
     if (serializeNull || !element.isJsonNull()) {
       json.add(key, element);
     }

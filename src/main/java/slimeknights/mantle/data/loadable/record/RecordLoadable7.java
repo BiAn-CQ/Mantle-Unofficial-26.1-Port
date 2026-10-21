@@ -33,13 +33,17 @@ record RecordLoadable7<A,B,C,D,E,F,G,R>(
 
   @Override
   public void serialize(R object, JsonObject json) {
-    fieldA.serialize(object, json);
-    fieldB.serialize(object, json);
-    fieldC.serialize(object, json);
-    fieldD.serialize(object, json);
-    fieldE.serialize(object, json);
-    fieldF.serialize(object, json);
-    fieldG.serialize(object, json);
+    serialize(object, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(R object, JsonObject json, TypedMap context) {
+    fieldA.serialize(object, json, context);
+    fieldB.serialize(object, json, context);
+    fieldC.serialize(object, json, context);
+    fieldD.serialize(object, json, context);
+    fieldE.serialize(object, json, context);
+    fieldF.serialize(object, json, context);
+    fieldG.serialize(object, json, context);
   }
 
   @Override
@@ -57,12 +61,16 @@ record RecordLoadable7<A,B,C,D,E,F,G,R>(
 
   @Override
   public void encode(FriendlyByteBuf buffer, R object) {
-    fieldA.encode(buffer, object);
-    fieldB.encode(buffer, object);
-    fieldC.encode(buffer, object);
-    fieldD.encode(buffer, object);
-    fieldE.encode(buffer, object);
-    fieldF.encode(buffer, object);
-    fieldG.encode(buffer, object);
+    encode(buffer, object, TypedMap.EMPTY);
+  }
+
+  public void encode(FriendlyByteBuf buffer, R object, TypedMap context) {
+    fieldA.encode(buffer, object, context);
+    fieldB.encode(buffer, object, context);
+    fieldC.encode(buffer, object, context);
+    fieldD.encode(buffer, object, context);
+    fieldE.encode(buffer, object, context);
+    fieldF.encode(buffer, object, context);
+    fieldG.encode(buffer, object, context);
   }
 }

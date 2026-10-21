@@ -18,6 +18,7 @@ import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.common.ItemStackTemplateLoadable;
 import slimeknights.mantle.data.loadable.common.RegistryCodecLoadable;
 import slimeknights.mantle.data.loadable.field.LoadableField;
+import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.typed.TypedMap;
@@ -30,7 +31,7 @@ import java.util.function.Supplier;
 /**
  * Class representing an item stack output. Supports both direct stacks and tag output, behaving like an ingredient used for output
  */
-public abstract class ItemOutput implements Supplier<ItemStack> {
+public abstract class ItemOutput extends StackOutput<Item,ItemStack> {
   /* Codecs - just adding these as needed */
   /** Codec for an output that may not be empty with any size */
   public static Codec<ItemOutput> REQUIRED_STACK_CODEC = new LoadableCodec<>(Loadable.REQUIRED_STACK);
@@ -38,6 +39,33 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
     new RegistryCodecLoadable<>(DataComponentPatch.CODEC, DataComponentPatch.STREAM_CODEC);
   public static final StreamCodec<RegistryFriendlyByteBuf, ItemOutput> STREAM_CODEC =
     ItemStack.OPTIONAL_STREAM_CODEC.map(ItemOutput::fromStack, ItemOutput::get);
+
+  public static final Codec<ItemOutput> REQUIRED_ITEM_CODEC = new LoadableCodec<>(Loadable.REQUIRED_ITEM);
+  public static final Codec<ItemOutput> OPTIONAL_ITEM_CODEC = new LoadableCodec<>(Loadable.OPTIONAL_ITEM);
+  public static final Codec<ItemOutput> OPTIONAL_STACK_CODEC = new LoadableCodec<>(Loadable.OPTIONAL_STACK);
+
+  @Override public DataComponentPatch getComponents() {
+    if (this instanceof OfTemplate value) { return value.template.components(); }
+    if (this instanceof OfTagPreference value) { return value.components; }
+    if (this instanceof OfStack value) { return value.stack.getComponentsPatch(); }
+    return DataComponentPatch.EMPTY;
+  }
+  @Override public com.mojang.datafixers.util.Either<Item,TagKey<Item>> getValueOrTag() {
+    TagKey<Item> tag = getTag();
+    return tag == null ? com.mojang.datafixers.util.Either.left(getItem()) : com.mojang.datafixers.util.Either.right(tag);
+  }
+
+  public static final slimeknights.mantle.data.loadable.Loadable<ItemOutput> OPTIONAL_ITEM = Loadable.OPTIONAL_ITEM;
+  public static final slimeknights.mantle.data.loadable.Loadable<ItemOutput> REQUIRED_ITEM = Loadable.REQUIRED_ITEM;
+  public static final slimeknights.mantle.data.loadable.Loadable<ItemOutput> OPTIONAL_STACK = Loadable.OPTIONAL_STACK;
+  public static final slimeknights.mantle.data.loadable.Loadable<ItemOutput> REQUIRED_STACK = Loadable.REQUIRED_STACK;
+
+  public static final RecordLoadable<ItemOutput> REQUIRED_ITEM_LOADABLE = Loadable.REQUIRED_ITEM;
+  public static final RecordLoadable<ItemOutput> OPTIONAL_ITEM_LOADABLE = Loadable.OPTIONAL_ITEM;
+  public static final RecordLoadable<ItemOutput> REQUIRED_STACK_LOADABLE = Loadable.REQUIRED_STACK;
+  public static final RecordLoadable<ItemOutput> OPTIONAL_STACK_LOADABLE = Loadable.OPTIONAL_STACK;
+  public static final StreamCodec<RegistryFriendlyByteBuf,ItemOutput> REQUIRED_STREAM_CODEC = ItemStack.STREAM_CODEC.map(ItemOutput::fromStack,ItemOutput::get);
+  public static final StreamCodec<RegistryFriendlyByteBuf,ItemOutput> OPTIONAL_STREAM_CODEC = STREAM_CODEC;
 
   /** Empty instance */
   public static final ItemOutput EMPTY = new OfStack(ItemStack.EMPTY);
@@ -87,6 +115,10 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
    * @return  Json element
    */
   public abstract JsonElement serialize(boolean writeCount);
+
+  public JsonElement serialize(boolean writeCount, TypedMap context) {
+    return serialize(writeCount);
+  }
 
   /**
    * Creates a new output for the given stack
@@ -202,8 +234,12 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public JsonElement serialize(boolean writeCount) {
+      return serialize(writeCount, ContextKey.currentContext());
+    }
+
+    public JsonElement serialize(boolean writeCount, TypedMap context) {
       return ItemStackTemplateLoadable.STACK.serialize(
-        new ItemStackTemplate(item, writeCount ? count : 1, DataComponentPatch.EMPTY));
+        new ItemStackTemplate(item, writeCount ? count : 1, DataComponentPatch.EMPTY), context);
     }
   }
 
@@ -232,8 +268,17 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public JsonElement serialize(boolean writeCount) {
+      return serialize(writeCount, ContextKey.currentContext());
+    }
+
+    public JsonElement serialize(boolean writeCount, TypedMap context) {
+      if (stack.isEmpty()) {
+        JsonObject empty = new JsonObject();
+        if (writeCount) empty.addProperty("count",0);
+        return empty;
+      }
       return ItemStackTemplateLoadable.STACK.serialize(
-        new ItemStackTemplate(stack.getItem(), writeCount ? stack.getCount() : 1, stack.getComponentsPatch()));
+        new ItemStackTemplate(stack.getItem(), writeCount ? stack.getCount() : 1, stack.getComponentsPatch()), context);
     }
   }
 
@@ -266,7 +311,11 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public JsonElement serialize(boolean writeCount) {
-      return ItemStackTemplateLoadable.STACK.serialize(writeCount ? template : template.withCount(1));
+      return serialize(writeCount, ContextKey.currentContext());
+    }
+
+    public JsonElement serialize(boolean writeCount, TypedMap context) {
+      return ItemStackTemplateLoadable.STACK.serialize(writeCount ? template : template.withCount(1), context);
     }
   }
 
@@ -312,6 +361,10 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public JsonElement serialize(boolean writeCount) {
+      return serialize(writeCount, ContextKey.currentContext());
+    }
+
+    public JsonElement serialize(boolean writeCount, TypedMap context) {
       JsonObject json = new JsonObject();
       if (!writeCount || count > 0) {
         json.addProperty("tag", tag.location().toString());
@@ -320,7 +373,7 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
         json.addProperty("count", count);
       }
       if (count > 0 && !components.isEmpty()) {
-        json.add("components", COMPONENTS.serialize(components));
+        json.add("components", COMPONENTS.serialize(components, context));
       }
       return json;
     }
@@ -357,6 +410,16 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
         }
         return fromTag(tag, count, COMPONENTS.getOrDefault(json, "components", DataComponentPatch.EMPTY, context));
       }
+      if (!nonEmpty && ((!json.has("id") && !json.has("item"))
+          || json.has("count") && json.get("count").getAsInt() == 0
+          || json.has("id") && json.get("id").getAsString().equals("minecraft:air")
+          || json.has("item") && json.get("item").getAsString().equals("minecraft:air"))) {
+        return EMPTY;
+      }
+      if (json.has("item") && !json.has("id")) {
+        json = json.deepCopy();
+        json.add("id", json.remove("item"));
+      }
       ItemStackTemplate template = stack.convert(json, "item output", context);
       if (!readCount && template.count() != 1) {
         throw new IllegalArgumentException("Item output for this recipe must have a count of 1");
@@ -366,15 +429,23 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public void serialize(ItemOutput object, JsonObject json) {
-      serialize(object).getAsJsonObject().entrySet().forEach(entry -> json.add(entry.getKey(), entry.getValue()));
+      serialize(object, json, TypedMap.EMPTY);
+    }
+
+    public void serialize(ItemOutput object, JsonObject json, TypedMap context) {
+      serialize(object, context).getAsJsonObject().entrySet().forEach(entry -> json.add(entry.getKey(), entry.getValue()));
     }
 
     @Override
     public JsonElement serialize(ItemOutput output) {
+      return serialize(output, TypedMap.EMPTY);
+    }
+
+    public JsonElement serialize(ItemOutput output, TypedMap context) {
       if (nonEmpty && output.isEmpty()) {
         throw new IllegalArgumentException("ItemOutput cannot be empty for this recipe");
       }
-      return output.serialize(readCount);
+      return output.serialize(readCount, context);
     }
 
     @Override
@@ -390,6 +461,10 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
 
     @Override
     public void encode(FriendlyByteBuf buffer, ItemOutput object) {
+      encode(buffer, object, TypedMap.EMPTY);
+    }
+
+    public void encode(FriendlyByteBuf buffer, ItemOutput object, TypedMap context) {
       if (!nonEmpty) {
         boolean present = !object.isEmpty();
         buffer.writeBoolean(present);
@@ -398,9 +473,9 @@ public abstract class ItemOutput implements Supplier<ItemStack> {
         }
       }
       if (object instanceof OfTemplate template) {
-        stack.encode(buffer, template.template);
+        stack.encode(buffer, template.template, context);
       } else {
-        stack.encode(buffer, ItemStackTemplate.fromNonEmptyStack(object.get()));
+        stack.encode(buffer, ItemStackTemplate.fromNonEmptyStack(object.get()), context);
       }
     }
 

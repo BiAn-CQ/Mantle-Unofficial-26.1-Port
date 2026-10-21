@@ -39,7 +39,7 @@ public class RegistryArgument {
 
   /** Creates and registers all suggestion providers */
   @Internal
-  static void registerSuggestions() {
+  public static void registerSuggestions() {
     REGISTRY = register(getResource("registry"), (context, builder) ->
       SharedSuggestionProvider.suggestResource(context.getSource().registryAccess().registries().map(entry -> entry.key().identifier()), builder));
     // TODO 1.21: rename to "registry_tags"

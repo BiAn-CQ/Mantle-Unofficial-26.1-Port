@@ -58,8 +58,7 @@ public class MantleEvents {
       for (int i = 0; i < totalSize; i++) {
         ItemStack stack = inventory.getItem(i);
         if (!stack.isEmpty() && stack.is(MantleTags.Items.SOULBOUND)) {
-          int slot = i;
-          CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putInt(SOULBOUND_SLOT, slot));
+          stack.set(slimeknights.mantle.registration.MantleData.SOULBOUND_SLOT.get(), i);
         }
       }
     }
@@ -147,11 +146,13 @@ public class MantleEvents {
   }
 
   private static int getSoulboundSlot(ItemStack stack) {
-    CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-    return tag.getIntOr(SOULBOUND_SLOT, -1);
+    Integer component = stack.get(slimeknights.mantle.registration.MantleData.SOULBOUND_SLOT.get());
+    if (component != null) { return component; }
+    return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getIntOr(SOULBOUND_SLOT, -1);
   }
 
   private static void clearSoulboundSlot(ItemStack stack) {
+    stack.remove(slimeknights.mantle.registration.MantleData.SOULBOUND_SLOT.get());
     CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.remove(SOULBOUND_SLOT));
   }
 }

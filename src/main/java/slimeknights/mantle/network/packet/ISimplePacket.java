@@ -8,7 +8,7 @@ import slimeknights.mantle.network.NetworkWrapper;
 /**
  * Packet interface to add common methods for registration
  */
-public interface ISimplePacket extends CustomPacketPayload {
+public interface ISimplePacket extends slimeknights.mantle.network.ISimplePacket {
   /**
    * Encodes a packet for the buffer
    * @param buf  Buffer instance
@@ -22,7 +22,7 @@ public interface ISimplePacket extends CustomPacketPayload {
   void handle(IPayloadContext context);
 
   @Override
-  default Type<? extends CustomPacketPayload> type() {
+  default Type<? extends slimeknights.mantle.network.ISimplePacket> type() {
     return NetworkWrapper.typeFor(getClass());
   }
 }

@@ -16,7 +16,17 @@ import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 /** Interface for transferring fluid either to or from an item */
-public interface IFluidContainerTransfer extends IJsonSerializable {
+public interface IFluidContainerTransfer extends IJsonSerializable, slimeknights.mantle.data.registry.GenericLoaderRegistry.IHaveLoader {
+  TransferRegistry LOADER = new TransferRegistry();
+
+  /** Older integrations can retain their Gson serializer while migrating to record loadables. */
+  @Override default slimeknights.mantle.data.loadable.record.RecordLoadable<? extends IFluidContainerTransfer> getLoader() {
+    return TransferRegistry.LEGACY;
+  }
+  @Override default com.google.gson.JsonObject serialize(com.google.gson.JsonSerializationContext context) {
+    return LOADER.serialize(this, slimeknights.mantle.data.loadable.field.ContextKey.currentContext()).getAsJsonObject();
+  }
+
   /**
    * Adds every item an ingredient may accept without assuming it has a vanilla holder set.
    * Custom ingredients deliberately reject {@link Ingredient#getValues()}, so their own

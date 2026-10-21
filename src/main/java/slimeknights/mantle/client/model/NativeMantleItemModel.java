@@ -56,7 +56,7 @@ public final class NativeMantleItemModel implements ItemModel {
     delegate.update(output, item, resolver, displayContext, level, owner, seed);
   }
 
-  private static ItemModel bakeLayers(ItemModel.BakingContext context, Matrix4fc transformation,
+  public static ItemModel bakeLayers(ItemModel.BakingContext context, Matrix4fc transformation,
                                       Identifier parentId, Map<String, Material> textures,
                                       List<LayerData> layers) {
     ModelBaker baker = context.blockModelBaker();

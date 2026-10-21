@@ -4,6 +4,7 @@ import org.jetbrains.annotations.Contract;
 
 import javax.annotation.Nullable;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Interface for a map where keys are typed so the resulting value is typed. This interface is for a read only map, see {@link MutableTypedMap} for a modifiable variant.
@@ -40,6 +41,20 @@ public interface TypedMap {
   interface Key<K> {}
 
 
+  /** Creates a mutable builder for a context map. */
+  static TypedMapBuilder builder() {
+    return TypedMapBuilder.builder();
+  }
+
+  /** Fetches a required key using the caller's error convention. */
+  default <T> T getOrThrow(Key<T> key, slimeknights.mantle.data.loadable.ErrorFactory error) {
+    T value = get(key);
+    if (value == null) {
+      throw error.create("Missing " + key + " in context");
+    }
+    return value;
+  }
+
   /** Empty instance */
   TypedMap EMPTY = new TypedMap() {
     @Override
@@ -73,4 +88,6 @@ public interface TypedMap {
   static TypedMap empty() {
     return EMPTY;
   }
+
+  Supplier<TypedMap> EMPTY_SUPPLIER = () -> EMPTY;
 }

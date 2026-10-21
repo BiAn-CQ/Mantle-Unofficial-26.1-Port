@@ -53,7 +53,18 @@ public interface StringLoadable<T> extends Loadable<T> {
    * @return  String representation of the object.
    * @throws RuntimeException  if unable to serialize this to a string
    */
-  String getString(T object);
+  default String getString(T object) {
+    return getString(object, TypedMap.EMPTY);
+  }
+
+  default String getString(T object, TypedMap context) {
+    return getString(object);
+  }
+
+  @Override
+  default JsonElement serialize(T object, TypedMap context) {
+    return new JsonPrimitive(getString(object, context));
+  }
 
   @Override
   default JsonElement serialize(T object) {

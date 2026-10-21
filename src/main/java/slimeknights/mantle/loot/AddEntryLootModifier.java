@@ -27,7 +27,7 @@ public class AddEntryLootModifier extends LootModifier {
   public static final MapCodec<AddEntryLootModifier> CODEC = RecordCodecBuilder.mapCodec(inst -> codecStart(inst).and(inst.group(
     ILootModifierCondition.CODEC.listOf().fieldOf("post_conditions").forGetter(m -> m.modifierConditions),
     MantleCodecs.LOOT_ENTRY.fieldOf("entry").forGetter(m -> m.entry),
-    MantleCodecs.LOOT_FUNCTIONS.fieldOf("functions").forGetter(m -> m.functions))).apply(inst, AddEntryLootModifier::new));
+    MantleCodecs.LOOT_FUNCTIONS.optionalFieldOf("functions", new LootItemFunction[0]).forGetter(m -> m.functions))).apply(inst, AddEntryLootModifier::new));
 
   /** Additional conditions that can consider the previously generated loot */
   private final List<ILootModifierCondition> modifierConditions;

@@ -64,10 +64,15 @@ public class DefaultingLoaderRegistry<T extends IHaveLoader> extends GenericLoad
 
   @Override
   public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
+    return serialize(src, slimeknights.mantle.data.loadable.field.ContextKey.currentContext());
+  }
+
+  @Override
+  public JsonElement serialize(T src, TypedMap context) {
     if (src == defaultInstance) {
       return JsonNull.INSTANCE;
     }
-    return serialize(src);
+    return super.serialize(src, context);
   }
 
   /**
@@ -88,16 +93,21 @@ public class DefaultingLoaderRegistry<T extends IHaveLoader> extends GenericLoad
 
   /* Default in network */
 
-  @SuppressWarnings("unchecked")  // the cast is safe here as its just doing a map lookup, shouldn't cause harm if it fails. Besides, the loader has to extend T to work
   @Override
   public void encode(FriendlyByteBuf buffer, T src) {
+    encode(buffer, src, TypedMap.EMPTY);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public void encode(FriendlyByteBuf buffer, T src, TypedMap context) {
     if (src == defaultInstance) {
       loaders.encodeOptional(buffer, null);
       return;
     }
     RecordLoadable<? extends IHaveLoader> loader = src.getLoader();
     loaders.encodeOptional(buffer, (RecordLoadable<? extends T>)loader);
-    encode(loader, buffer, src);
+    encode(loader, buffer, src, context);
   }
 
   @Override

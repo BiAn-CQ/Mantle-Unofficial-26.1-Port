@@ -1,0 +1,17 @@
+{
+  "type": "mantle:empty_potion",
+  "amount": 250,
+  "conditions": [
+    {
+      "type": "neoforge:not",
+      "value": {
+        "type": "mantle:tag_filled",
+        "tag": "c:bottles/splash"
+      }
+    }
+  ],
+  "input": "minecraft:splash_potion",
+  "result": {
+    "id": "minecraft:glass_bottle"
+  }
+}

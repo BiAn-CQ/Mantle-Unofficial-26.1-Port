@@ -388,6 +388,15 @@ public class JsonHelper {
 
   /* Codecs */
 
+  public static <O,T> T parse(com.mojang.serialization.DynamicOps<O> ops, Codec<T> codec, O value) {
+    return codec.parse(ops, value).getOrThrow(JsonParseException::new);
+  }
+
+  public static <O,T> O serialize(com.mojang.serialization.DynamicOps<O> ops, Codec<T> codec, T value) {
+    return codec.encodeStart(ops, value).getOrThrow(JsonParseException::new);
+  }
+
+
   /** Parses the given JSON element using the passed codec */
   public static <T> T parse(Codec<T> codec, Reader reader) throws JsonParseException {
     return parse(codec, GsonHelper.parse(reader));
@@ -436,5 +445,26 @@ public class JsonHelper {
   public static JsonObject serializeBlockState(BlockState state, JsonObject json) {
     BlockStateLoadable.DIFFERENCE.serialize(state, json);
     return json;
+  }
+
+  public static <O,T> JsonArray serializeList(com.mojang.serialization.DynamicOps<O> ops, Codec<T> codec, java.util.List<T> values) {
+    JsonArray result = new JsonArray();
+    for (T value : values) { result.add(ops.convertTo(JsonOps.INSTANCE, serialize(ops, codec, value))); }
+    return result;
+  }
+
+  @SafeVarargs
+  public static <O,T> JsonArray serializeArray(com.mojang.serialization.DynamicOps<O> ops, Codec<T> codec, T... values) {
+    return serializeList(ops, codec, java.util.Arrays.asList(values));
+  }
+
+  public static boolean processConditions(JsonObject json, String member, net.neoforged.neoforge.common.conditions.ICondition.IContext context) {
+    return !json.has(member) || processConditions(GsonHelper.getAsJsonArray(json, member), context);
+  }
+  public static boolean processConditions(JsonArray conditions, net.neoforged.neoforge.common.conditions.ICondition.IContext context) {
+    for (JsonElement condition : conditions) {
+      if (!parse(net.neoforged.neoforge.common.conditions.ICondition.CODEC, condition).test(context)) { return false; }
+    }
+    return true;
   }
 }

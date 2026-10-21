@@ -3,6 +3,7 @@ package slimeknights.mantle.command.argument;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
@@ -21,7 +22,7 @@ public record RegistryTagSource<T>(Registry<T> registry) implements TagSource<T>
 
   @Override
   public String folder() {
-    return key().identifier().getPath();
+    return Registries.tagsDirPath(key());
   }
 
   /* Tags */

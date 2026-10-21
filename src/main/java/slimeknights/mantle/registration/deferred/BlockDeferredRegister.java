@@ -375,7 +375,7 @@ public class BlockDeferredRegister extends DeferredRegisterWrapper<Block> {
    */
   public <T extends Enum<T>, B extends Block> EnumObject<T,B> registerEnum(
       T[] values, String name, Function<T,? extends B> mapper, Function<? super B, ? extends BlockItem> item) {
-    return registerEnum(values, name, (fullName, value) -> register(fullName, () -> mapper.apply(value), item));
+    return registerEnumEntries(values, name, (fullName, value) -> register(fullName, () -> mapper.apply(value), item));
   }
 
   /**
@@ -388,7 +388,7 @@ public class BlockDeferredRegister extends DeferredRegisterWrapper<Block> {
    */
   public <T extends Enum<T>, B extends Block> EnumObject<T,B> registerEnum(
       String name, T[] values, Function<T,? extends B> mapper, Function<? super B, ? extends BlockItem> item) {
-    return registerEnum(name, values, (fullName, value) -> register(fullName, () -> mapper.apply(value), item));
+    return registerEnumEntries(name, values, (fullName, value) -> register(fullName, () -> mapper.apply(value), item));
   }
 
   /**
@@ -401,7 +401,7 @@ public class BlockDeferredRegister extends DeferredRegisterWrapper<Block> {
    * @return  Enum object
    */
   public <T extends Enum<T>, B extends Block> EnumObject<T, B> registerEnumNoItem(T[] values, String name, Function<T, ? extends B> mapper) {
-    return registerEnum(values, name, (fullName, value) -> registerNoItem(fullName, () -> mapper.apply(value)));
+    return registerEnumEntries(values, name, (fullName, value) -> registerNoItem(fullName, () -> mapper.apply(value)));
   }
 
   /** Registers a potted form of the given block using the vanilla pot */
@@ -482,5 +482,8 @@ public class BlockDeferredRegister extends DeferredRegisterWrapper<Block> {
    */
   public MetalItemObject registerMetal(String name, BlockBehaviour.Properties blockProps, Function<Block,? extends BlockItem> blockItem, Item.Properties itemProps) {
     return registerMetal(name, name, blockProps, blockItem, itemProps);
+  }
+  @Override protected <I extends Block> Supplier<? extends I> registerMapped(String name, Function<net.minecraft.resources.Identifier,? extends I> factory) {
+    return registerNoItem(name, () -> factory.apply(resource(name)));
   }
 }

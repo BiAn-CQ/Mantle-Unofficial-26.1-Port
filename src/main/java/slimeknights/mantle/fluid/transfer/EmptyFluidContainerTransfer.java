@@ -32,6 +32,13 @@ import java.util.function.Consumer;
 public class EmptyFluidContainerTransfer implements IFluidContainerTransfer {
   public static final Identifier ID = Mantle.getResource("empty_item");
 
+  public static final slimeknights.mantle.data.loadable.record.RecordLoadable<EmptyFluidContainerTransfer> LOADER = slimeknights.mantle.data.loadable.record.RecordLoadable.create(
+    IngredientLoadable.DISALLOW_EMPTY.requiredField("input", value -> value.input),
+    ItemOutput.Loadable.OPTIONAL_ITEM.emptyField("result", value -> value.result),
+    slimeknights.mantle.recipe.helper.FluidOutput.Loadable.REQUIRED.requiredField("fluid", value -> value.fluid),
+    EmptyFluidContainerTransfer::new);
+  @Override public slimeknights.mantle.data.loadable.record.RecordLoadable<? extends IFluidContainerTransfer> getLoader() { return LOADER; }
+
   protected final Ingredient input;
   protected final ItemOutput result;
   protected final FluidOutput fluid;
@@ -81,7 +88,7 @@ public class EmptyFluidContainerTransfer implements IFluidContainerTransfer {
   public JsonObject serialize(JsonSerializationContext context) {
     JsonObject json = new JsonObject();
     json.addProperty("type", ID.toString());
-    json.add("input", Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, input).getOrThrow());
+    json.add("input", IngredientLoadable.DISALLOW_EMPTY.serialize(input, slimeknights.mantle.data.loadable.field.ContextKey.currentContext()));
     if (!result.isEmpty()) {
       json.add("result", result.serialize(false));
     }

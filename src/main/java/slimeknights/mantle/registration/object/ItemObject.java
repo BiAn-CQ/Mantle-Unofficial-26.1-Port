@@ -75,6 +75,16 @@ public class ItemObject<I extends ItemLike> implements Supplier<I>, ItemLike, Id
     }
   }
 
+  @SuppressWarnings("unchecked")
+  public net.minecraft.core.Holder<I> getHolder() {
+    if (entry instanceof net.minecraft.core.Holder<?> holder) { return (net.minecraft.core.Holder<I>)holder; }
+    if (get() instanceof Item item) { return (net.minecraft.core.Holder<I>)item.builtInRegistryHolder(); }
+    if (get() instanceof net.minecraft.world.level.block.Block block) { return (net.minecraft.core.Holder<I>)block.builtInRegistryHolder(); }
+    throw new IllegalStateException("Item-like entry has no registry holder: " + id);
+  }
+
+  public net.minecraft.core.HolderSet<I> holderSet() { return net.minecraft.core.HolderSet.direct(getHolder()); }
+
   @Override
   public Item asItem() {
     return get().asItem();

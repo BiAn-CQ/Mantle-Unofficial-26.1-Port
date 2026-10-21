@@ -35,7 +35,7 @@ import java.util.function.Predicate;
  * @param <T>  Type being loaded
  */
 @SuppressWarnings("unused")  // API
-public interface RecordLoadable<T> extends Loadable<T> {
+public interface RecordLoadable<T> extends Loadable<T>, RecordJsonDeserializer<T>, RecordJsonSerializer<T> {
   /* Deserializing */
 
   /**
@@ -61,12 +61,29 @@ public interface RecordLoadable<T> extends Loadable<T> {
   /* Serializing */
 
   /** Writes this object to json */
-  void serialize(T object, JsonObject json);
+  default void serialize(T object, JsonObject json) {
+    serialize(object, json, TypedMap.EMPTY);
+  }
+
+  @Override
+  default void serializeInto(T object, JsonObject json, TypedMap context) {
+    serialize(object, json, context);
+  }
+
+  /** Serializes record fields with their registry and condition context. */
+  default void serialize(T object, JsonObject json, TypedMap context) {
+    serialize(object, json);
+  }
 
   @Override
   default JsonElement serialize(T object) {
+    return serialize(object, TypedMap.EMPTY);
+  }
+
+  @Override
+  default JsonElement serialize(T object, TypedMap context) {
     JsonObject json = new JsonObject();
-    serialize(object, json);
+    serialize(object, json, context);
     return json;
   }
 

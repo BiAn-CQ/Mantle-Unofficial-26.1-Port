@@ -24,6 +24,8 @@ public class EmptyFluidWithNBTTransfer extends EmptyFluidContainerTransfer {
     this(input, filled, FluidOutput.fromStack(fluid));
   }
 
+  @Override public slimeknights.mantle.data.loadable.record.RecordLoadable<? extends IFluidContainerTransfer> getLoader() { return TransferRegistry.LEGACY; }
+
   @Override
   protected FluidStack getFluid(ItemStack stack) {
     // TODO: merge NBT?

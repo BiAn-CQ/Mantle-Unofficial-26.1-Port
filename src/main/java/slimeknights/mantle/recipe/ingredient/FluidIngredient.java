@@ -49,7 +49,76 @@ public abstract class FluidIngredient implements IAmLoadable {
   /** Loadable for tag matches */
   private static final Loadable<Compound> COMPOUND = loadableBuilder().build(NETWORK).list(2).flatXmap(Compound::new, c -> c.ingredients);
   /** Loadable for any fluid ingredient */
-  public static final Loadable<FluidIngredient> LOADABLE = loadableBuilder().array(COMPOUND).build(NETWORK);
+  private static final Loadable<FluidIngredient> LEGACY_LOADABLE = loadableBuilder().array(COMPOUND).build(NETWORK);
+  private static final Loadable<net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient> NATIVE_LOADABLE =
+    new RegistryCodecLoadable<>(net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient.CODEC,
+      net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient.STREAM_CODEC);
+  /** Accepts both the old Mantle format and native sized ingredients without dropping component predicates. */
+  public static final Loadable<FluidIngredient> LOADABLE = new Loadable<>() {
+    @Override
+    public FluidIngredient convert(JsonElement element, String key, slimeknights.mantle.util.typed.TypedMap context) {
+      if (element.isJsonArray()) {
+        if (element.getAsJsonArray().size() < 2) throw new com.google.gson.JsonSyntaxException("Fluid ingredient array must contain at least two entries");
+        return of(element.getAsJsonArray().asList().stream().map(child -> convert(child,key,context)).toList());
+      }
+      if (element.isJsonObject() && element.getAsJsonObject().has("ingredient")) {
+        return of(NATIVE_LOADABLE.convert(element, key, context));
+      }
+      return LEGACY_LOADABLE.convert(element, key, context);
+    }
+
+    @Override
+    public JsonElement serialize(FluidIngredient value, slimeknights.mantle.util.typed.TypedMap context) {
+      return value instanceof Native nativeIngredient
+        ? NATIVE_LOADABLE.serialize(nativeIngredient.ingredient, context)
+        : LEGACY_LOADABLE.serialize(value, context);
+    }
+
+    @Override
+    public FluidIngredient decode(FriendlyByteBuf buffer, slimeknights.mantle.util.typed.TypedMap context) {
+      return switch (buffer.readByte()) {
+        case 0 -> NETWORK.decode(buffer, context);
+        case 1 -> of(NATIVE_LOADABLE.decode(buffer, context));
+        case 2 -> of(buffer.readList(input -> decode(input, context)));
+        default -> throw new io.netty.handler.codec.DecoderException("Unknown fluid ingredient format");
+      };
+    }
+
+    @Override
+    public void encode(FriendlyByteBuf buffer, FluidIngredient value, slimeknights.mantle.util.typed.TypedMap context) {
+      if (value instanceof Native nativeIngredient) {
+        buffer.writeByte(1);
+        NATIVE_LOADABLE.encode(buffer, nativeIngredient.ingredient, context);
+      } else if (value instanceof Compound compound) {
+        buffer.writeByte(2);
+        buffer.writeCollection(compound.ingredients, (output, child) -> encode(output, child, context));
+      } else {
+        buffer.writeByte(0);
+        NETWORK.encode(buffer, value, context);
+      }
+    }
+  };
+
+  /** Wraps a native sized ingredient, retaining custom fluid and component matching. */
+  public static FluidIngredient of(net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient ingredient) {
+    return new Native(ingredient);
+  }
+
+  private static final class Native extends FluidIngredient {
+    private final net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient ingredient;
+
+    private Native(net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient ingredient) {
+      this.ingredient = ingredient;
+    }
+
+    @Override public boolean test(Fluid fluid) { return ingredient.ingredient().fluids().contains(fluid.builtInRegistryHolder()); }
+    @Override public boolean test(FluidStack stack) { return ingredient.test(stack); }
+    @Override public int getAmount(Fluid fluid) { return ingredient.amount(); }
+    @Override protected List<FluidStack> getAllFluids() {
+      return IngredientHelper.displayFluids(ingredient.ingredient()).map(stack -> stack.copyWithAmount(ingredient.amount())).toList();
+    }
+    @Override public Loadable<FluidIngredient> loadable() { return LOADABLE; }
+  }
 
 
   /* Constructors */
@@ -125,6 +194,9 @@ public abstract class FluidIngredient implements IAmLoadable {
    */
   public abstract int getAmount(Fluid fluid);
 
+  /** Gets the amount for the matching stack, including native component predicates. */
+  public int getAmount(FluidStack stack) { return getAmount(stack.getFluid()); }
+
   /**
    * Checks if the given fluid stack argument matches this ingredient
    * @param stack  Fluid stack to check
@@ -178,13 +250,13 @@ public abstract class FluidIngredient implements IAmLoadable {
   /** @deprecated use {@link #LOADABLE} with {@link Loadable#encode(FriendlyByteBuf, Object)} */
   @Deprecated(forRemoval = true)
   public void write(FriendlyByteBuf buffer) {
-    NETWORK.encode(buffer, this);
+    LOADABLE.encode(buffer, this);
   }
 
   /** @deprecated use {@link #LOADABLE} with {@link Loadable#decode(FriendlyByteBuf)}*/
   @Deprecated(forRemoval = true)
   public static FluidIngredient read(FriendlyByteBuf buffer) {
-    return NETWORK.decode(buffer);
+    return LOADABLE.decode(buffer);
   }
 
 
@@ -300,6 +372,14 @@ public abstract class FluidIngredient implements IAmLoadable {
         if (ingredient.test(fluid)) {
           return ingredient.getAmount(fluid);
         }
+      }
+      return 0;
+    }
+
+    @Override
+    public int getAmount(FluidStack stack) {
+      for (FluidIngredient ingredient : ingredients) {
+        if (ingredient.test(stack)) return ingredient.getAmount(stack);
       }
       return 0;
     }

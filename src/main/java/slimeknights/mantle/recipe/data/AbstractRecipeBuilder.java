@@ -21,6 +21,20 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
 public abstract class AbstractRecipeBuilder<T extends AbstractRecipeBuilder<T>> {
+  @SuppressWarnings("unchecked")
+  protected T self() { return (T)this; }
+
+  protected AdvancementHolder buildAdvancement(RecipeOutput output, Identifier id, String folder) { return buildAdvancement(id, folder); }
+  protected AdvancementHolder buildOptionalAdvancement(RecipeOutput output, Identifier id, String folder) { return buildOptionalAdvancement(id, folder); }
+
+  protected final java.util.Map<String,Criterion<?>> criteria = new java.util.LinkedHashMap<>();
+
+  private java.util.Map<String,Criterion<?>> collectCriteria() {
+    var result = new java.util.LinkedHashMap<String,Criterion<?>>(advancementBuilder.criteria.buildKeepingLast());
+    result.putAll(criteria);
+    return result;
+  }
+
   /** Advancement builder for this class */
   protected final Advancement.Builder advancementBuilder = Advancement.Builder.advancement();
   /** Group for this recipe */
@@ -35,7 +49,7 @@ public abstract class AbstractRecipeBuilder<T extends AbstractRecipeBuilder<T>> 
    */
   @SuppressWarnings("unchecked")
   public T unlockedBy(String name, Criterion<?> criterion) {
-    this.advancementBuilder.addCriterion(name, criterion);
+    this.criteria.put(name, criterion);
     return (T) this;
   }
 
@@ -92,7 +106,7 @@ public abstract class AbstractRecipeBuilder<T extends AbstractRecipeBuilder<T>> 
 
   @Nullable
   protected AdvancementHolder buildOptionalAdvancement(ResourceKey<Recipe<?>> id, String folder) {
-    if (this.advancementBuilder.criteria.build().isEmpty()) {
+    if (collectCriteria().isEmpty()) {
       return null;
     }
     return buildAdvancement(id, folder);
@@ -111,19 +125,21 @@ public abstract class AbstractRecipeBuilder<T extends AbstractRecipeBuilder<T>> 
    */
   @SuppressWarnings("removal") // Vanilla 26.1 RecipeProvider still uses the identifier parent overload.
   protected AdvancementHolder buildAdvancement(ResourceKey<Recipe<?>> id, String folder) {
-    if (this.advancementBuilder.criteria.build().isEmpty()) {
+    if (collectCriteria().isEmpty()) {
       throw new IllegalStateException("No way of obtaining recipe " + id);
     }
     Identifier location = id.identifier();
     Identifier advancementId = Identifier.fromNamespaceAndPath(location.getNamespace(), "recipes/" + folder + "/" + location.getPath());
-    this.advancementBuilder
+    Advancement.Builder builder = Advancement.Builder.recipeAdvancement();
+    collectCriteria().forEach(builder::addCriterion);
+    builder
         .parent(Identifier.parse("recipes/root"))
         .rewards(AdvancementRewards.Builder.recipe(id))
         .requirements(AdvancementRequirements.Strategy.OR)
     // we directly add the critera through the map as we want to replace it if already added instead of erroring
     // the rest of these setters all replace our previous recipe data
         .addCriterion("has_the_recipe", RecipeUnlockedTrigger.unlocked(id));
-    return this.advancementBuilder.build(advancementId);
+    return builder.build(advancementId);
   }
 
   protected AdvancementHolder buildAdvancement(Identifier id, String folder) {

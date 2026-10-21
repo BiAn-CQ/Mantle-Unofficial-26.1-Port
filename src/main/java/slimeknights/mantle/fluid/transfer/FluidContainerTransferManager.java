@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.Dynamic;
@@ -21,12 +22,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.conditions.ICondition.IContext;
+import net.neoforged.neoforge.common.conditions.ConditionalOps;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.neoforge.fluids.FluidStack;
 import slimeknights.mantle.Mantle;
 import slimeknights.mantle.data.gson.GenericRegisteredSerializer;
+import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.network.MantleNetwork;
 import slimeknights.mantle.util.JsonHelper;
 
@@ -98,11 +101,12 @@ public class FluidContainerTransferManager extends SimpleJsonResourceReloadListe
   /** Loads transfer from JSON */
   @Nullable
   private IFluidContainerTransfer loadFluidTransfer(Identifier key, JsonObject json) {
-    try {
-      if (!json.has("conditions") || JsonHelper.deserializeConditions(GsonHelper.getAsJsonArray(json, "conditions")).stream().allMatch(condition -> condition.test(context))) {
-        return GSON.fromJson(json, IFluidContainerTransfer.class);
+    try (IngredientLoadable.Scope ignored = IngredientLoadable.pushOps(new ConditionalOps<>(getRegistryLookup().createSerializationContext(JsonOps.INSTANCE), context))) {
+      String conditions = json.has(ConditionalOps.DEFAULT_CONDITIONS_KEY) ? ConditionalOps.DEFAULT_CONDITIONS_KEY : "conditions";
+      if (!json.has(conditions) || JsonHelper.deserializeConditions(GsonHelper.getAsJsonArray(json, conditions)).stream().allMatch(condition -> condition.test(context))) {
+        return IFluidContainerTransfer.LOADER.deserialize(json, slimeknights.mantle.data.loadable.field.ContextKey.currentContext());
       }
-    } catch (JsonSyntaxException e) {
+    } catch (JsonParseException | IllegalArgumentException e) {
       log.error("Failed to load fluid container transfer info from {}", key, e);
     }
     return null;

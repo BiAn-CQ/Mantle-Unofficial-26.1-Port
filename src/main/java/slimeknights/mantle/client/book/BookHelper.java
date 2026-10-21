@@ -23,6 +23,9 @@ public class BookHelper {
    */
   public static String getCurrentSavedPage(@Nullable ItemStack item) {
     if (item != null) {
+      if (item.has(slimeknights.mantle.registration.MantleData.BOOK_PAGE.get())) {
+        return item.getOrDefault(slimeknights.mantle.registration.MantleData.BOOK_PAGE.get(), "");
+      }
       if (!item.isEmpty() && item.has(DataComponents.CUSTOM_DATA)) {
         CompoundTag bookNBT = item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getCompoundOrEmpty(BOOK_COMPOUND).getCompoundOrEmpty(BOOK_DATA_COMPOUND);
 
@@ -42,10 +45,11 @@ public class BookHelper {
    * @param currentPage the current open page
    */
   public static void writeSavedPageToBook(ItemStack stack, String currentPage) {
+    stack.set(slimeknights.mantle.registration.MantleData.BOOK_PAGE.get(), currentPage);
     CompoundTag compoundNBT = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
 
     CompoundTag mantleCompound = compoundNBT.getCompoundOrEmpty(BOOK_COMPOUND);
-    CompoundTag bookCompound = compoundNBT.getCompoundOrEmpty(BOOK_DATA_COMPOUND);
+    CompoundTag bookCompound = mantleCompound.getCompoundOrEmpty(BOOK_DATA_COMPOUND);
 
     bookCompound.putString(NBT_CURRENT_PAGE, currentPage);
 

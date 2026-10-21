@@ -31,6 +31,11 @@ public enum BooleanLoadable implements StringLoadable<Boolean> {
   }
 
   @Override
+  public JsonElement serialize(Boolean object, TypedMap context) {
+    return new JsonPrimitive(object);
+  }
+
+  @Override
   public Boolean decode(FriendlyByteBuf buffer, TypedMap context) {
     return buffer.readBoolean();
   }

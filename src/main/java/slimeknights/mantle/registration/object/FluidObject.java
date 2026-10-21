@@ -43,6 +43,12 @@ public class FluidObject<F extends Fluid> implements Supplier<F>, ItemLike, IdAw
     this.still = still;
   }
 
+  @SuppressWarnings("unchecked")
+  public net.minecraft.core.Holder<Fluid> getHolder() {
+    return still instanceof net.minecraft.core.Holder<?> holder ? (net.minecraft.core.Holder<Fluid>)holder : get().builtInRegistryHolder();
+  }
+  public net.minecraft.core.HolderSet<Fluid> holderSet() { return net.minecraft.core.HolderSet.direct(getHolder()); }
+
   /** Gets the fluid type for this object */
   public FluidType getType() {
     return type.get();
@@ -86,6 +92,15 @@ public class FluidObject<F extends Fluid> implements Supplier<F>, ItemLike, IdAw
    * @param amount     Ingredient amount
    * @return  Ingredient instance
    */
+  public net.neoforged.neoforge.fluids.crafting.FluidIngredient ingredient() {
+    return net.neoforged.neoforge.fluids.crafting.FluidIngredient.of(commonTag != null
+      ? slimeknights.mantle.recipe.ingredient.IngredientHelper.fluidSet(commonTag) : holderSet());
+  }
+
+  public net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient sizedIngredient(int amount) {
+    return new net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient(ingredient(), amount);
+  }
+
   public FluidIngredient ingredient(int amount) {
     if (commonTag != null) {
       return FluidIngredient.of(commonTag, amount);

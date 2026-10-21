@@ -66,6 +66,8 @@ import slimeknights.mantle.fluid.transfer.EmptyFluidWithNBTTransfer;
 import slimeknights.mantle.fluid.transfer.EmptyPotionTransfer;
 import slimeknights.mantle.fluid.transfer.FillFluidContainerTransfer;
 import slimeknights.mantle.fluid.transfer.FillFluidWithNBTTransfer;
+import slimeknights.mantle.fluid.transfer.FillFluidCopyDataTransfer;
+import slimeknights.mantle.fluid.transfer.EmptyFluidCopyDataTransfer;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
 import slimeknights.mantle.item.LecternBookItem;
 import slimeknights.mantle.item.ContainerFoodItem.FluidContainerFoodItem;
@@ -114,6 +116,10 @@ public class Mantle {
 
     FluidContainerTransferManager.INSTANCE.init();
     MantleTags.init();
+    bus.addListener(net.neoforged.neoforge.event.BlockEntityTypeAddBlocksEvent.class, event -> {
+      event.modify(net.minecraft.world.level.block.entity.BlockEntityType.SIGN, RegistrationHelper.buildSignBlocks());
+      event.modify(net.minecraft.world.level.block.entity.BlockEntityType.HANGING_SIGN, RegistrationHelper.buildHangingSignBlocks());
+    });
     MantleNetwork.registerPackets();
 
     instance = this;
@@ -124,6 +130,8 @@ public class Mantle {
     bus.addListener(EventPriority.NORMAL, false, RegisterEvent.class, this::register);
     bus.addListener(EventPriority.NORMAL, false, RegisterPayloadHandlersEvent.class, NetworkWrapper::registerPayloads);
     MantleRecipes.init(bus);
+    slimeknights.mantle.registration.MantleData.init(bus);
+    slimeknights.mantle.registration.MantleAttributes.init(bus);
     MantleIngredientTypes.init(bus);
     // Vanilla only synchronizes recipe displays; multi-recipes need their recipe instances too.
     NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, OnDatapackSyncEvent.class, event ->
@@ -175,6 +183,8 @@ public class Mantle {
       FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(FillFluidContainerTransfer.ID, FillFluidContainerTransfer.DESERIALIZER);
       FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(EmptyFluidWithNBTTransfer.ID, EmptyFluidWithNBTTransfer.DESERIALIZER);
       FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(FillFluidWithNBTTransfer.ID, FillFluidWithNBTTransfer.DESERIALIZER);
+      FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(FillFluidCopyDataTransfer.ID, FillFluidCopyDataTransfer.LOADER);
+      FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(EmptyFluidCopyDataTransfer.ID, EmptyFluidCopyDataTransfer.LOADER);
       FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(EmptyPotionTransfer.ID, EmptyPotionTransfer.DESERIALIZER);
 
       // predicates
@@ -195,6 +205,22 @@ public class Mantle {
         FluidPredicate.LOADER.register(getResource("has_bucket"), FluidPredicate.HAS_BUCKET.getLoader());
         FluidPredicate.LOADER.register(getResource("lighter_than_air"), FluidPredicate.LIGHTER_THAN_AIR.getLoader());
 
+        // General entity predicates also support entities which are not living.
+        var entityLoader = slimeknights.mantle.data.predicate.entity.EntityPredicate.LOADER;
+        entityLoader.register(getResource("living"), slimeknights.mantle.data.predicate.entity.LivingEntityEntityPredicate.LOADER);
+        entityLoader.register(getResource("block_at_entity"), slimeknights.mantle.data.predicate.entity.EntityPredicate.BLOCK_AT_ENTITY);
+        entityLoader.register(getResource("fire_immune"), slimeknights.mantle.data.predicate.entity.EntityPredicate.FIRE_IMMUNE.getLoader());
+        entityLoader.register(getResource("can_freeze"), slimeknights.mantle.data.predicate.entity.EntityPredicate.CAN_FREEZE.getLoader());
+        entityLoader.register(getResource("on_fire"), slimeknights.mantle.data.predicate.entity.EntityPredicate.ON_FIRE.getLoader());
+        entityLoader.register(getResource("is_freezing"), slimeknights.mantle.data.predicate.entity.EntityPredicate.IS_FREEZING.getLoader());
+        entityLoader.register(getResource("is_in_powdered_snow"), slimeknights.mantle.data.predicate.entity.EntityPredicate.IS_IN_POWDERED_SNOW.getLoader());
+        entityLoader.register(getResource("on_ground"), slimeknights.mantle.data.predicate.entity.EntityPredicate.ON_GROUND.getLoader());
+        entityLoader.register(getResource("crouching"), slimeknights.mantle.data.predicate.entity.EntityPredicate.CROUCHING.getLoader());
+        entityLoader.register(getResource("sprinting"), slimeknights.mantle.data.predicate.entity.EntityPredicate.SPRINTING.getLoader());
+        entityLoader.register(getResource("eyes_in_water"), slimeknights.mantle.data.predicate.entity.EntityPredicate.EYES_IN_WATER.getLoader());
+        entityLoader.register(getResource("feet_in_water"), slimeknights.mantle.data.predicate.entity.EntityPredicate.FEET_IN_WATER.getLoader());
+        entityLoader.register(getResource("underwater"), slimeknights.mantle.data.predicate.entity.EntityPredicate.UNDERWATER.getLoader());
+        entityLoader.register(getResource("raining_at"), slimeknights.mantle.data.predicate.entity.EntityPredicate.RAINING.getLoader());
         // entity predicates
         // simple
         LivingEntityPredicate.LOADER.register(getResource("fire_immune"), LivingEntityPredicate.FIRE_IMMUNE.getLoader());
@@ -266,7 +292,7 @@ public class Mantle {
     event.addProvider(new MantleBlockTagProvider(packOutput, lookupProvider));
     event.addProvider(new MantleFluidTagProvider(packOutput, lookupProvider));
     event.addProvider(new MantleMenuTagProvider(packOutput, lookupProvider));
-    event.addProvider(new MantleFluidTransferProvider(packOutput));
+    event.addProvider(new MantleFluidTransferProvider(packOutput, lookupProvider));
   }
 
   private void gatherClientData(final GatherDataEvent.Client event) {

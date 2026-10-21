@@ -58,10 +58,14 @@ public class CompactLoadable<T> implements Loadable<T> {
 
   @Override
   public JsonElement serialize(T object) {
+    return serialize(object, TypedMap.EMPTY);
+  }
+
+  public JsonElement serialize(T object, TypedMap context) {
     if (compactCondition.test(object)) {
-      return compact.serialize(object);
+      return compact.serialize(object, context);
     }
-    return loadable.serialize(object);
+    return loadable.serialize(object, context);
   }
 
 
@@ -74,7 +78,11 @@ public class CompactLoadable<T> implements Loadable<T> {
 
   @Override
   public void encode(FriendlyByteBuf buffer, T object) {
-    loadable.encode(buffer, object);
+    encode(buffer, object, TypedMap.EMPTY);
+  }
+
+  public void encode(FriendlyByteBuf buffer, T object, TypedMap context) {
+    loadable.encode(buffer, object, context);
   }
 
   /** Extension for records */
@@ -92,7 +100,11 @@ public class CompactLoadable<T> implements Loadable<T> {
 
     @Override
     public void serialize(T object, JsonObject json) {
-      loadable.serialize(object, json);
+      serialize(object, json, TypedMap.EMPTY);
+    }
+
+    public void serialize(T object, JsonObject json, TypedMap context) {
+      loadable.serialize(object, json, context);
     }
 
     @Override

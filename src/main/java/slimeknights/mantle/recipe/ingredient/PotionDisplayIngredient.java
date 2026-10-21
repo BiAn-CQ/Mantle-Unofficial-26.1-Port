@@ -1,75 +1,60 @@
 package slimeknights.mantle.recipe.ingredient;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.display.SlotDisplay;
 import net.minecraft.world.level.ItemLike;
+import net.neoforged.neoforge.common.crafting.ICustomIngredient;
 import net.neoforged.neoforge.common.crafting.IngredientType;
+import slimeknights.mantle.data.codec.MantleCodecs;
+import slimeknights.mantle.network.codec.MantleStreamCodecs;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Stream;
 
-/** Ingredient that shows all potion variants on the displayed item list */
-public final class PotionDisplayIngredient extends ItemIngredient {
-  public static final MapCodec<PotionDisplayIngredient> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-    ITEMS_CODEC.optionalFieldOf("item", List.of()).forGetter(ingredient -> ingredient.explicitItems),
-    ITEM_TAG_CODEC.optionalFieldOf("tag").forGetter(ingredient -> optionalTag(ingredient.tag))
-  ).apply(instance, (items, tag) -> new PotionDisplayIngredient(items, tag.orElse(null))));
+/** Matches potion items while displaying their registered potion variants. */
+public class PotionDisplayIngredient implements ICustomIngredient {
+  public static final MapCodec<PotionDisplayIngredient> CODEC = MantleCodecs.ITEM_SET.fieldOf("items")
+    .xmap(PotionDisplayIngredient::new, PotionDisplayIngredient::itemSet);
+  private static final MapCodec<PotionDisplayIngredient> LEGACY_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    ItemIngredient.ITEMS_CODEC.optionalFieldOf("item", List.of()).forGetter(i -> i.itemSet.stream().toList()),
+    ItemIngredient.ITEM_TAG_CODEC.optionalFieldOf("tag").forGetter(i -> i.itemSet.unwrapKey())
+  ).apply(instance, (items, tag) -> new PotionDisplayIngredient(tag.<HolderSet<Item>>map(IngredientHelper::itemSet).orElseGet(() -> HolderSet.direct(items)))));
+  public static final MapCodec<PotionDisplayIngredient> MAP_CODEC = MapCodec.assumeMapUnsafe(Codec.withAlternative(CODEC.codec(), LEGACY_CODEC.codec()));
+  public static final StreamCodec<RegistryFriendlyByteBuf,PotionDisplayIngredient> STREAM_CODEC =
+    MantleStreamCodecs.ITEM_SET.map(PotionDisplayIngredient::new, PotionDisplayIngredient::itemSet);
 
-  private PotionDisplayIngredient(List<Holder<Item>> items, TagKey<Item> tag) {
-    super(items, tag);
+  private final HolderSet<Item> itemSet;
+  public PotionDisplayIngredient(HolderSet<Item> items) { this.itemSet = items; }
+  public HolderSet<Item> itemSet() { return itemSet; }
+  public static Ingredient of(HolderSet<Item> items) { return new PotionDisplayIngredient(items).toVanilla(); }
+  public static Ingredient of(List<? extends ItemLike> items) { return of(IngredientHelper.itemSet(items)); }
+  public static Ingredient of(ItemLike... items) { return of(List.of(items)); }
+  public static Ingredient of(TagKey<Item> tag) { return of(IngredientHelper.itemSet(tag)); }
+  @Override public boolean test(ItemStack stack) { return !stack.isEmpty() && itemSet.contains(stack.typeHolder()); }
+  @Override public Stream<Holder<Item>> items() { return itemSet.stream(); }
+  @Override public boolean isSimple() { return false; }
+  @Override public IngredientType<?> getType() { return MantleIngredientTypes.POTION_DISPLAY.get(); }
+  @Override public SlotDisplay display() {
+    return new SlotDisplay.Composite(BuiltInRegistries.POTION.listElements().flatMap(potion -> {
+      DataComponentPatch components = DataComponentPatch.builder().set(DataComponents.POTION_CONTENTS, new PotionContents(potion)).build();
+      return itemSet.stream().map(item -> (SlotDisplay)new SlotDisplay.ItemStackSlotDisplay(new ItemStackTemplate(item, components)));
+    }).toList());
   }
-
-  /** Creates a ingredient matching a list of items */
-  public static Ingredient of(List<? extends ItemLike> items) {
-    return new PotionDisplayIngredient(toItems(items), null).toVanilla();
-  }
-
-  /** Creates a ingredient matching a list of items */
-  public static Ingredient of(ItemLike... items) {
-    return of(Arrays.asList(items));
-  }
-
-  /** Creates a ingredient matching a tag */
-  public static Ingredient of(TagKey<Item> tag) {
-    return new PotionDisplayIngredient(List.of(), tag).toVanilla();
-  }
-
-  @Override
-  public boolean isSimple() {
-    return true;
-  }
-
-  @Override
-  public IngredientType<?> getType() {
-    return MantleIngredientTypes.POTION_DISPLAY.get();
-  }
-
-  @Override
-  public SlotDisplay display() {
-    List<SlotDisplay> displays = items().flatMap(item -> BuiltInRegistries.POTION.listElements().map(potion -> {
-      var stack = PotionContents.createItemStack(item.value(), potion);
-      return (SlotDisplay)new SlotDisplay.ItemStackSlotDisplay(ItemStackTemplate.fromNonEmptyStack(stack));
-    })).toList();
-    return new SlotDisplay.Composite(displays);
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    return object instanceof PotionDisplayIngredient other
-      && explicitItems.equals(other.explicitItems) && Objects.equals(tag, other.tag);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(explicitItems, tag);
-  }
+  @Override public boolean equals(Object other) { return other instanceof PotionDisplayIngredient ingredient && itemSet.equals(ingredient.itemSet); }
+  @Override public int hashCode() { return itemSet.hashCode(); }
 }

@@ -32,6 +32,7 @@ import slimeknights.mantle.Mantle;
 import slimeknights.mantle.client.SafeClientAccess;
 import slimeknights.mantle.client.TooltipKey;
 import slimeknights.mantle.data.gson.TagKeySerializer;
+import slimeknights.mantle.data.predicate.fluid.FluidPredicate;
 import slimeknights.mantle.recipe.ingredient.FluidIngredient;
 import slimeknights.mantle.util.JsonHelper;
 
@@ -56,6 +57,7 @@ public class FluidTooltipHandler extends SimpleJsonResourceReloadListener<Dynami
   /** GSON instance */
   // TODO: do we even need GSON here? I feel a classical serializer is sufficient as this class is pretty simple
   public static final Gson GSON = (new GsonBuilder())
+    .registerTypeAdapter(FluidUnitList.class, FluidUnitList.LOADABLE)
     .registerTypeAdapter(TagKey.class, new TagKeySerializer<>(Registries.FLUID))
     .setPrettyPrinting()
     .disableHtmlEscaping()
@@ -68,7 +70,7 @@ public class FluidTooltipHandler extends SimpleJsonResourceReloadListener<Dynami
   private static final FluidUnit BUCKET = new FluidUnit(Mantle.makeDescriptionId("gui", "fluid.bucket"), 1000);
   private static final FluidUnit MILLIBUCKET = new FluidUnit(Mantle.makeDescriptionId("gui", "fluid.millibucket"), 1);
   /** Default fallback in case resource pack has none */
-  private static final FluidUnitList DEFAULT_LIST = new FluidUnitList(null, Collections.singletonList(BUCKET));
+  private static final FluidUnitList DEFAULT_LIST = new FluidUnitList(FluidPredicate.NONE, Collections.singletonList(BUCKET));
 
   /** Formatter as a biconsumer, shows up in a few places */
   public static final BiConsumer<Integer,List<Component>> BUCKET_FORMATTER = FluidTooltipHandler::appendBuckets;

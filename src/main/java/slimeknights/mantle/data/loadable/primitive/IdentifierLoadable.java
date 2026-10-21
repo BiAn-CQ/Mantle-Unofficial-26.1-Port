@@ -12,7 +12,7 @@ import slimeknights.mantle.util.typed.TypedMap;
  * @see Loadables#RESOURCE_LOCATION
  */
 @SuppressWarnings("unused")  // API
-public interface IdentifierLoadable<T> extends StringLoadable<T> {
+public interface IdentifierLoadable<T> extends ResourceLocationLoadable<T> {
   /** Standard implementation of a resource location loadable for raw resource locations. */
   StringLoadable<Identifier> DEFAULT = new IdentifierLoadable<>() {
     @Override
@@ -63,6 +63,9 @@ public interface IdentifierLoadable<T> extends StringLoadable<T> {
    * @throws RuntimeException  if unable to serialize this to a string
    */
   Identifier getKey(T object);
+
+  @Override
+  default Identifier getKey(T object, TypedMap context) { return getKey(object); }
 
   @Override
   default String getString(T object) {

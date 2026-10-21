@@ -36,20 +36,32 @@ public record SimpleRecordLoadable<T>(Loadable<T> loadable, String key, @Nullabl
 
   @Override
   public JsonElement serialize(T object) {
+    return serialize(object, TypedMap.EMPTY);
+  }
+
+  public JsonElement serialize(T object, TypedMap context) {
     if (compact) {
-      return loadable.serialize(object);
+      return loadable.serialize(object, context);
     }
-    return RecordLoadable.super.serialize(object);
+    return RecordLoadable.super.serialize(object, context);
   }
 
   @Override
   public void serialize(T object, JsonObject json) {
-    json.add(key, loadable.serialize(object));
+    serialize(object, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(T object, JsonObject json, TypedMap context) {
+    json.add(key, loadable.serialize(object, context));
   }
 
   @Override
   public void encode(FriendlyByteBuf buffer, T value) {
-    loadable.encode(buffer, value);
+    encode(buffer, value, TypedMap.EMPTY);
+  }
+
+  public void encode(FriendlyByteBuf buffer, T value, TypedMap context) {
+    loadable.encode(buffer, value, context);
   }
 
   @Override
