@@ -123,6 +123,11 @@ public final class CombatHelper {
     return target.isAttackable() && !target.skipAttackInteraction(attacker);
   }
 
+  /** Gets the attribute contributed by the attacking hand's stack. */
+  public static float getAttribute(ItemStack stack, LivingEntity entity, Holder<Attribute> attribute, InteractionHand hand) {
+    return hand == InteractionHand.OFF_HAND ? getOffhandAttribute(stack, entity, attribute) : (float)entity.getAttributeValue(attribute);
+  }
+
   /**
    * Performs an attack, mimicking  {@link Player#attack(Entity)}.
    * For use in {@link net.minecraft.world.item.Item#interactLivingEntity(ItemStack, Player, LivingEntity, InteractionHand)} primarily,
@@ -157,7 +162,7 @@ public final class CombatHelper {
       // apply cooldown
     float baseDamage = hand == InteractionHand.OFF_HAND
       ? getOffhandAttribute(stack, player, Attributes.ATTACK_DAMAGE)
-      : (float)player.getAttributeValue(Attributes.ATTACK_DAMAGE);
+      : player.isAutoSpinAttack() ? player.autoSpinAttackDmg : (float)player.getAttributeValue(Attributes.ATTACK_DAMAGE);
       // scale damage cooldown
     float cooldown = hand == InteractionHand.OFF_HAND ? OffhandCooldownTracker.getCooldown(player) : player.getAttackStrengthScale(0.5F);
     float magicBoost = 0;
@@ -166,6 +171,14 @@ public final class CombatHelper {
     }
     baseDamage *= 0.2F + cooldown * cooldown * 0.8F;
     baseDamage += stack.getItem().getAttackDamageBonus(target, baseDamage, damageSource);
+
+    if (target.is(net.minecraft.tags.EntityTypeTags.REDIRECTABLE_PROJECTILE)
+        && target instanceof net.minecraft.world.entity.projectile.Projectile projectile
+        && projectile.deflect(net.minecraft.world.entity.projectile.ProjectileDeflection.AIM_DEFLECT, player,
+          net.minecraft.world.entity.EntityReference.of(player), true)) {
+      playAttackSound(player, SoundEvents.PLAYER_ATTACK_NODAMAGE);
+      return true;
+    }
 
     if (baseDamage > 0 || magicBoost > 0) {
       boolean fullStrength = cooldown > 0.9F;
@@ -205,7 +218,7 @@ public final class CombatHelper {
         causeKnockback(player, target, targetLiving, knockback, oldMovement);
 
         if (sweep && player.level() instanceof ServerLevel serverLevel) {
-          float sweepDamage = 1 + (float)player.getAttributeValue(Attributes.SWEEPING_DAMAGE_RATIO) * baseDamage;
+          float sweepDamage = 1 + getAttribute(stack, player, Attributes.SWEEPING_DAMAGE_RATIO, hand) * baseDamage;
           for (LivingEntity nearby : player.level().getEntitiesOfClass(LivingEntity.class, stack.getSweepHitBox(player, target))) {
             if (nearby != player && nearby != targetLiving && !player.isAlliedTo(nearby)
               && (!(nearby instanceof ArmorStand armorStand) || !armorStand.isMarker())

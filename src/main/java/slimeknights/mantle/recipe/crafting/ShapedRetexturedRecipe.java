@@ -88,13 +88,13 @@ public class ShapedRetexturedRecipe extends ShapedRecipe {
   private final boolean matchAll;
   private final @Nullable JsonData jsonData;
 
-  ShapedRetexturedRecipe(Recipe.CommonInfo commonInfo, CraftingRecipe.CraftingBookInfo bookInfo,
+  protected ShapedRetexturedRecipe(Recipe.CommonInfo commonInfo, CraftingRecipe.CraftingBookInfo bookInfo,
                          ShapedRecipePattern pattern, ItemStackTemplate result,
                          Ingredient texture, boolean matchAll) {
     this(commonInfo, bookInfo, pattern, result, texture, matchAll, null);
   }
 
-  static ShapedRetexturedRecipe fromJsonData(Recipe.CommonInfo commonInfo, CraftingRecipe.CraftingBookInfo bookInfo,
+  public static ShapedRetexturedRecipe fromJsonData(Recipe.CommonInfo commonInfo, CraftingRecipe.CraftingBookInfo bookInfo,
                                              ShapedRecipePattern.Data pattern, ItemStackTemplate result,
                                              Either<Character,Ingredient> texture, boolean matchAll) {
     return new JsonData(commonInfo, bookInfo, pattern, result, texture, matchAll).unpack().getOrThrow();

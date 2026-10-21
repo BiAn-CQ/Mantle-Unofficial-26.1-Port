@@ -53,6 +53,13 @@ public class FlowingFluidObject<F extends FlowingFluid> extends FluidObject<F> {
     return Objects.requireNonNull(flowing.get(), "Fluid object missing flowing fluid");
   }
 
+  @SuppressWarnings("unchecked")
+  public net.minecraft.core.Holder<Fluid> getFlowingHolder() {
+    return flowing instanceof net.minecraft.core.Holder<?> holder ? (net.minecraft.core.Holder<Fluid>)holder : getFlowing().builtInRegistryHolder();
+  }
+
+  @Override public net.minecraft.core.HolderSet<Fluid> holderSet() { return net.minecraft.core.HolderSet.direct(getHolder(), getFlowingHolder()); }
+
   /**
    * Gets the block form of this fluid
    * @return  Block form

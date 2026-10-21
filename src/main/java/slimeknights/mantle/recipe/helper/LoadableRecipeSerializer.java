@@ -80,7 +80,7 @@ public final class LoadableRecipeSerializer {
 
       @Override
       public JsonElement serialize(T recipe, DynamicOps<?> ops) {
-        JsonElement serialized = loadable.serialize(recipe);
+        JsonElement serialized = loadable.serialize(recipe, context(ops));
         if (!serialized.isJsonObject()) {
           throw new JsonParseException("RecordLoadable serialized a recipe to a non-object value");
         }
@@ -99,7 +99,7 @@ public final class LoadableRecipeSerializer {
 
     MapCodec<T> mapCodec = MapCodec.assumeMapUnsafe(codec);
     StreamCodec<RegistryFriendlyByteBuf, T> streamCodec = StreamCodec.of(
-      (buffer, recipe) -> loadable.encode(buffer, recipe),
+      (buffer, recipe) -> loadable.encode(buffer, recipe, buildContext(serializerReference.get(), typeAwareReference.get(), type, buffer.registryAccess())),
       buffer -> loadable.decode(buffer, buildContext(serializerReference.get(), typeAwareReference.get(), type, buffer.registryAccess()))
     );
     RecipeSerializer<T> serializer = new RecipeSerializer<>(mapCodec, streamCodec);
@@ -151,8 +151,8 @@ public final class LoadableRecipeSerializer {
       .put(ContextKey.ID, id)
       .put(ContextKey.DEBUG, "Recipe decoded through a 26.1 codec")
       .put(SERIALIZER, serializer);
-    if (opsOrAccess instanceof RegistryOps<?> registryOps) {
-      builder.put(ContextKey.REGISTRY_LOOKUP, registryOps.lookupProvider);
+    if (opsOrAccess instanceof DynamicOps<?> ops) {
+      builder.putAll(ContextKey.opsContext(ops).build());
     } else if (opsOrAccess instanceof net.minecraft.core.RegistryAccess registryAccess) {
       builder.put(ContextKey.REGISTRY_ACCESS, registryAccess);
     }

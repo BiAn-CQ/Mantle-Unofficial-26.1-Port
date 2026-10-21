@@ -19,7 +19,7 @@ public class EmptyModifierLootCondition implements ILootModifierCondition, JsonD
   public static final Identifier ID = Mantle.getResource("empty");
   public static final EmptyModifierLootCondition INSTANCE = new EmptyModifierLootCondition();
 
-  private EmptyModifierLootCondition() {}
+  protected EmptyModifierLootCondition() {}
 
   @Override
   public boolean test(List<ItemStack> generatedLoot, LootContext context) {

@@ -2,7 +2,6 @@ package slimeknights.mantle.recipe.cooking;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeOutput;
@@ -19,7 +18,6 @@ import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 
 import javax.annotation.Nullable;
-import java.util.stream.StreamSupport;
 
 /** Builder for {@link SmeltingResultRecipe}, {@link BlastingResultRecipe}, {@link SmokingResultRecipe}, and {@link CampfireResultRecipe} */
 @SuppressWarnings({"unchecked", "unused"})
@@ -32,6 +30,9 @@ public class CookingRecipeBuilder<T extends CookingRecipeBuilder<T>> extends Abs
   protected Ingredient ingredient = null;
   protected CookingBookCategory category = CookingBookCategory.MISC;
   protected CookingType type = CookingType.SMELTING;
+  protected boolean forceItemOutput;
+
+  public T forceItemOutput() { forceItemOutput = true; return (T)this; }
 
   protected CookingRecipeBuilder(ItemOutput result) {
     this.result = result;
@@ -86,7 +87,7 @@ public class CookingRecipeBuilder<T extends CookingRecipeBuilder<T>> extends Abs
 
   /** Sets the input ingredient */
   public T requires(TagKey<Item> tag) {
-    return requires(Ingredient.of(StreamSupport.stream(BuiltInRegistries.ITEM.getTagOrEmpty(tag).spliterator(), false).map(Holder::value)));
+    return requires(Ingredient.of(net.minecraft.core.HolderSet.emptyNamed(BuiltInRegistries.ITEM, tag)));
   }
 
   private static ResourceKey<Recipe<?>> recipeKey(net.minecraft.resources.Identifier id) {
@@ -105,17 +106,27 @@ public class CookingRecipeBuilder<T extends CookingRecipeBuilder<T>> extends Abs
     return (T) this;
   }
 
-  private interface RecipeFactory<R extends Recipe<?>> {
+  protected interface RecipeFactory<R extends Recipe<?>> {
     R create(Recipe.CommonInfo commonInfo, AbstractCookingRecipe.CookingBookInfo bookInfo, Ingredient ingredient, ItemOutput result, float experience, int cookingTime);
   }
 
-  private <R extends Recipe<?>> T save(RecipeOutput output, ResourceKey<Recipe<?>> id, RecipeFactory<R> factory, int cookingTime) {
+  protected <R extends Recipe<?>> T save(RecipeOutput output, ResourceKey<Recipe<?>> id, RecipeFactory<R> factory, int cookingTime) {
     if (ingredient == null) {
       throw new IllegalStateException("Ingredient must be set");
     }
     AdvancementHolder advancement = buildOptionalAdvancement(id, "cooking");
     R recipe = factory.create(new Recipe.CommonInfo(true), new AbstractCookingRecipe.CookingBookInfo(category, group), ingredient, result, experience, cookingTime);
-    saveRecipe(output, recipe, advancement, id);
+    Recipe<?> selected = recipe;
+    if (!forceItemOutput && result.getTag() == null) {
+      var template = net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(result.get());
+      var common = new Recipe.CommonInfo(true);
+      var book = new AbstractCookingRecipe.CookingBookInfo(category, group);
+      if (recipe instanceof SmeltingResultRecipe) { selected = new net.minecraft.world.item.crafting.SmeltingRecipe(common, book, ingredient, template, experience, cookingTime); }
+      else if (recipe instanceof BlastingResultRecipe) { selected = new net.minecraft.world.item.crafting.BlastingRecipe(common, book, ingredient, template, experience, cookingTime); }
+      else if (recipe instanceof SmokingResultRecipe) { selected = new net.minecraft.world.item.crafting.SmokingRecipe(common, book, ingredient, template, experience, cookingTime); }
+      else if (recipe instanceof CampfireResultRecipe) { selected = new net.minecraft.world.item.crafting.CampfireCookingRecipe(common, book, ingredient, template, experience, cookingTime); }
+    }
+    saveRecipe(output, selected, advancement, id);
     return (T) this;
   }
 
@@ -154,5 +165,31 @@ public class CookingRecipeBuilder<T extends CookingRecipeBuilder<T>> extends Abs
   }
 
   /** Helper to change the cooking type in {@link #save(Consumer, ResourceLocation)} for the sake of {@link net.minecraftforge.common.crafting.ConditionalRecipe} */
-  public enum CookingType { SMELTING, BLASTING, SMOKING, CAMPFIRE }
+  public enum CookingType {
+    SMELTING, BLASTING, SMOKING, CAMPFIRE;
+    public int getTime(int time) { return this == CAMPFIRE ? time * 3 : this == SMELTING ? time : time / 2; }
+    public Recipe<?> create(String group, CookingBookCategory category, Ingredient input, ItemOutput output, float experience, int time) {
+      return create(group, category, input, output, experience, time, false);
+    }
+    public Recipe<?> create(String group, CookingBookCategory category, Ingredient input, ItemOutput output, float experience, int time, boolean force) {
+      var common = new Recipe.CommonInfo(true);
+      var book = new AbstractCookingRecipe.CookingBookInfo(category, group);
+      int duration = getTime(time);
+      if (force || output.getTag() != null) {
+        return switch (this) {
+          case SMELTING -> new SmeltingResultRecipe(common, book, input, output, experience, duration);
+          case BLASTING -> new BlastingResultRecipe(common, book, input, output, experience, duration);
+          case SMOKING -> new SmokingResultRecipe(common, book, input, output, experience, duration);
+          case CAMPFIRE -> new CampfireResultRecipe(common, book, input, output, experience, duration);
+        };
+      }
+      var result = net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(output.get());
+      return switch (this) {
+        case SMELTING -> new net.minecraft.world.item.crafting.SmeltingRecipe(common, book, input, result, experience, duration);
+        case BLASTING -> new net.minecraft.world.item.crafting.BlastingRecipe(common, book, input, result, experience, duration);
+        case SMOKING -> new net.minecraft.world.item.crafting.SmokingRecipe(common, book, input, result, experience, duration);
+        case CAMPFIRE -> new net.minecraft.world.item.crafting.CampfireCookingRecipe(common, book, input, result, experience, duration);
+      };
+    }
+  }
 }

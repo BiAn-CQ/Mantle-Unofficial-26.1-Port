@@ -13,9 +13,15 @@ import slimeknights.mantle.recipe.helper.ItemOutput;
 public class ItemNameOutput extends ItemOutput {
   private final Identifier name;
   private final int count;
+  private final net.minecraft.core.component.DataComponentPatch components;
 
   private ItemNameOutput(Identifier name, int count) {
+    this(name, count, net.minecraft.core.component.DataComponentPatch.EMPTY);
+  }
+
+  private ItemNameOutput(Identifier name, int count, net.minecraft.core.component.DataComponentPatch components) {
     this.name = name;
+    this.components = components;
     this.count = count;
   }
 
@@ -38,10 +44,15 @@ public class ItemNameOutput extends ItemOutput {
     return fromName(name, 1);
   }
 
+  public static ItemNameOutput fromName(Identifier name, int count, net.minecraft.core.component.DataComponentPatch components) { return new ItemNameOutput(name,count,components); }
+  public static ItemNameOutput fromName(Identifier name, net.minecraft.core.component.DataComponentPatch components) { return fromName(name,1,components); }
+
   @Override
   public ItemStack get() {
     throw new UnsupportedOperationException("Cannot get the item stack from a item name output");
   }
+
+  @Override public net.minecraft.core.component.DataComponentPatch getComponents() { return components; }
 
   @Override
   public int getCount() {
@@ -50,11 +61,17 @@ public class ItemNameOutput extends ItemOutput {
 
   @Override
   public JsonElement serialize(boolean writeCount) {
+    return serialize(writeCount, slimeknights.mantle.data.loadable.field.ContextKey.currentContext());
+  }
+
+  @Override
+  public JsonElement serialize(boolean writeCount, slimeknights.mantle.util.typed.TypedMap context) {
     JsonObject jsonResult = new JsonObject();
     jsonResult.addProperty("id", name.toString());
     if (writeCount && count != 1) {
       jsonResult.addProperty("count", count);
     }
+    if (!components.isEmpty()) { jsonResult.add("components", slimeknights.mantle.data.loadable.Loadables.DATA_COMPONENTS.serialize(components, context)); }
     return jsonResult;
   }
 }

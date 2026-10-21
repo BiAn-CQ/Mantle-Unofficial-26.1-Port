@@ -17,6 +17,7 @@ import slimeknights.mantle.data.loadable.field.LoadableField;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.typed.TypedMap;
+import slimeknights.mantle.data.loadable.field.ContextKey;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -26,11 +27,33 @@ import java.util.function.Supplier;
 /**
  * Class representing a fluid stack output. Supports both direct stacks and tag output, behaving like {@link slimeknights.mantle.recipe.ingredient.FluidIngredient} used for output
  */
-public abstract class FluidOutput implements Supplier<FluidStack> {
+public abstract class FluidOutput extends StackOutput<Fluid,FluidStack> {
+  public static final com.mojang.serialization.Codec<FluidOutput> OPTIONAL_CODEC = new slimeknights.mantle.data.loadable.LoadableCodec<>(Loadable.OPTIONAL);
+  public static final com.mojang.serialization.Codec<FluidOutput> REQUIRED_CODEC = new slimeknights.mantle.data.loadable.LoadableCodec<>(Loadable.REQUIRED);
+
+  @Override public DataComponentPatch getComponents() {
+    if (this instanceof OfTemplate value) { return value.template.components(); }
+    if (this instanceof OfTagPreference value) { return value.components; }
+    if (this instanceof OfStack value) { return value.stack.getComponentsPatch(); }
+    return DataComponentPatch.EMPTY;
+  }
+  @Override public com.mojang.datafixers.util.Either<Fluid,TagKey<Fluid>> getValueOrTag() {
+    TagKey<Fluid> tag = getTag();
+    return tag == null ? com.mojang.datafixers.util.Either.left(this instanceof OfFluid value ? value.fluid : this instanceof OfTemplate value ? value.template.fluid().value() : get().getFluid()) : com.mojang.datafixers.util.Either.right(tag);
+  }
+
+  public static final slimeknights.mantle.data.loadable.Loadable<FluidOutput> REQUIRED = Loadable.REQUIRED;
+  public static final slimeknights.mantle.data.loadable.Loadable<FluidOutput> OPTIONAL = Loadable.OPTIONAL;
+
+  public static final RecordLoadable<FluidOutput> REQUIRED_LOADABLE = Loadable.REQUIRED;
+  public static final RecordLoadable<FluidOutput> OPTIONAL_LOADABLE = Loadable.OPTIONAL;
+
   /** Empty instance */
   public static final FluidOutput EMPTY = new OfStack(FluidStack.EMPTY);
   public static final StreamCodec<RegistryFriendlyByteBuf, FluidOutput> STREAM_CODEC =
     FluidStack.OPTIONAL_STREAM_CODEC.map(FluidOutput::fromStack, FluidOutput::get);
+  public static final StreamCodec<RegistryFriendlyByteBuf,FluidOutput> REQUIRED_STREAM_CODEC = FluidStack.STREAM_CODEC.map(FluidOutput::fromStack,FluidOutput::get);
+  public static final StreamCodec<RegistryFriendlyByteBuf,FluidOutput> OPTIONAL_STREAM_CODEC = STREAM_CODEC;
   private static final slimeknights.mantle.data.loadable.Loadable<DataComponentPatch> COMPONENTS =
     new RegistryCodecLoadable<>(DataComponentPatch.CODEC, DataComponentPatch.STREAM_CODEC);
 
@@ -72,13 +95,21 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
    */
   @Deprecated(forRemoval = true)
   public JsonObject serialize() {
+    return serialize(ContextKey.currentContext());
+  }
+
+  public JsonObject serialize(TypedMap context) {
     JsonObject json = new JsonObject();
-    serialize(json);
+    serialize(json, context);
     return json;
   }
 
   /** Writes this output to JSON */
   public abstract void serialize(JsonObject json);
+
+  public void serialize(JsonObject json, TypedMap context) {
+    serialize(json);
+  }
 
   /**
    * Creates a new output for the given stack
@@ -171,8 +202,12 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public void serialize(JsonObject json) {
+      serialize(json, TypedMap.EMPTY);
+    }
+
+    public void serialize(JsonObject json, TypedMap context) {
       if (amount > 0) {
-        FluidStackTemplateLoadable.STACK.serialize(new FluidStackTemplate(fluid, amount)).getAsJsonObject().entrySet()
+        FluidStackTemplateLoadable.STACK.serialize(new FluidStackTemplate(fluid, amount), context).getAsJsonObject().entrySet()
           .forEach(entry -> json.add(entry.getKey(), entry.getValue()));
       }
     }
@@ -202,7 +237,11 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public void serialize(JsonObject json) {
-      FluidStackTemplateLoadable.STACK.serialize(template).getAsJsonObject().entrySet()
+      serialize(json, TypedMap.EMPTY);
+    }
+
+    public void serialize(JsonObject json, TypedMap context) {
+      FluidStackTemplateLoadable.STACK.serialize(template, context).getAsJsonObject().entrySet()
         .forEach(entry -> json.add(entry.getKey(), entry.getValue()));
     }
   }
@@ -227,8 +266,12 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public void serialize(JsonObject json) {
+      serialize(json, TypedMap.EMPTY);
+    }
+
+    public void serialize(JsonObject json, TypedMap context) {
       if (!stack.isEmpty()) {
-        FluidStackTemplateLoadable.STACK.serialize(FluidStackTemplate.fromNonEmptyStack(stack)).getAsJsonObject().entrySet()
+        FluidStackTemplateLoadable.STACK.serialize(FluidStackTemplate.fromNonEmptyStack(stack), context).getAsJsonObject().entrySet()
           .forEach(entry -> json.add(entry.getKey(), entry.getValue()));
       }
     }
@@ -276,12 +319,16 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public void serialize(JsonObject json) {
+      serialize(json, TypedMap.EMPTY);
+    }
+
+    public void serialize(JsonObject json, TypedMap context) {
       if (amount > 0) {
         json.addProperty("tag", tag.location().toString());
       }
       json.addProperty("amount", amount);
       if (amount > 0 && !components.isEmpty()) {
-        json.add("components", COMPONENTS.serialize(components));
+        json.add("components", COMPONENTS.serialize(components, context));
       }
     }
   }
@@ -308,7 +355,11 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
           IntLoadable.FROM_ONE.getIfPresent(json, "amount", context),
           COMPONENTS.getOrDefault(json, "components", DataComponentPatch.EMPTY, context));
       }
-      if (!json.has("id")) {
+      if (json.has("fluid") && !json.has("id")) {
+        json = json.deepCopy();
+        json.add("id",json.remove("fluid"));
+      }
+      if (!json.has("id") || !nonEmpty && json.has("amount") && json.get("amount").getAsInt() == 0) {
         if (nonEmpty) {
           throw new IllegalArgumentException("FluidOutput cannot be empty for this recipe");
         }
@@ -319,10 +370,14 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public void serialize(FluidOutput output, JsonObject json) {
+      serialize(output, json, TypedMap.EMPTY);
+    }
+
+    public void serialize(FluidOutput output, JsonObject json, TypedMap context) {
       if (nonEmpty && output.isEmpty()) {
         throw new IllegalArgumentException("FluidOutput cannot be empty for this recipe");
       }
-      output.serialize(json);
+      output.serialize(json, context);
     }
 
     @Override
@@ -335,6 +390,10 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
 
     @Override
     public void encode(FriendlyByteBuf buffer, FluidOutput object) {
+      encode(buffer, object, TypedMap.EMPTY);
+    }
+
+    public void encode(FriendlyByteBuf buffer, FluidOutput object, TypedMap context) {
       if (!nonEmpty) {
         boolean present = !object.isEmpty();
         buffer.writeBoolean(present);
@@ -343,9 +402,9 @@ public abstract class FluidOutput implements Supplier<FluidStack> {
         }
       }
       if (object instanceof OfTemplate template) {
-        stack.encode(buffer, template.template);
+        stack.encode(buffer, template.template, context);
       } else {
-        stack.encode(buffer, FluidStackTemplate.fromNonEmptyStack(object.get()));
+        stack.encode(buffer, FluidStackTemplate.fromNonEmptyStack(object.get()), context);
       }
     }
 

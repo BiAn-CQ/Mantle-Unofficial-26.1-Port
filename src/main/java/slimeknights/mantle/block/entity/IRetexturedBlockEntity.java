@@ -44,4 +44,22 @@ public interface IRetexturedBlockEntity {
       RetexturedHelper.onTextureUpdated((BlockEntity)this);
     }
   }
+
+  default void updateTexture(Block texture) { updateTexture(RetexturedHelper.getTextureName(texture)); }
+
+  static void applyImplicitComponents(IRetexturedBlockEntity entity, net.minecraft.core.component.DataComponentGetter input) {
+    entity.updateTexture(input.getOrDefault(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get(), net.minecraft.world.level.block.Blocks.AIR));
+  }
+
+  static void collectImplicitComponents(IRetexturedBlockEntity entity, net.minecraft.core.component.DataComponentMap.Builder builder) {
+    Block texture = entity.getTexture();
+    if (texture != net.minecraft.world.level.block.Blocks.AIR) { builder.set(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get(), texture); }
+  }
+
+  static void removeComponentsFromTag(CompoundTag tag) {
+    CompoundTag data = tag.getCompoundOrEmpty("NeoForgeData");
+    data.remove(RetexturedHelper.TAG_TEXTURE);
+    if (data.isEmpty()) { tag.remove("NeoForgeData"); }
+    else { tag.put("NeoForgeData", data); }
+  }
 }

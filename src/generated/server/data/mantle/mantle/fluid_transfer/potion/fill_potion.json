@@ -1,0 +1,19 @@
+{
+  "type": "mantle:fill_copy_data",
+  "conditions": [
+    {
+      "type": "mantle:tag_filled",
+      "registry": "minecraft:fluid",
+      "tag": "c:potion"
+    }
+  ],
+  "copy": "minecraft:potion_contents",
+  "fluid": {
+    "amount": 250,
+    "tag": "c:potion"
+  },
+  "input": "minecraft:glass_bottle",
+  "result": {
+    "id": "minecraft:potion"
+  }
+}

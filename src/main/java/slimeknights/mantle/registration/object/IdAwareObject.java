@@ -6,4 +6,5 @@ import net.minecraft.resources.Identifier;
 public interface IdAwareObject {
   /** Gets the ID for this object */
   Identifier getId();
+  default Identifier id() { return getId(); }
 }

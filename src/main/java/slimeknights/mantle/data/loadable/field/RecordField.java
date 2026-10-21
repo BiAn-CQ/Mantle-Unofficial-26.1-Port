@@ -28,7 +28,21 @@ public interface RecordField<T,P> {
    * @param parent  Object
    * @throws RuntimeException  If unable to save the element
    */
-  void serialize(P parent, JsonObject json);
+  default void serialize(P parent, JsonObject json) {
+    serialize(parent, json, TypedMap.EMPTY);
+  }
+
+  default void serializeInto(P parent, JsonObject json, TypedMap context) {
+    serialize(parent, json, context);
+  }
+
+  default void serializeInto(P parent, JsonObject json) {
+    serialize(parent, json, TypedMap.EMPTY);
+  }
+
+  default void serialize(P parent, JsonObject json, TypedMap context) {
+    serialize(parent, json);
+  }
 
   /**
    * Parses this loadable from the network
@@ -46,5 +60,11 @@ public interface RecordField<T,P> {
    * @param parent  Parent to read values from
    * @throws io.netty.handler.codec.EncoderException  If unable to encode a value to network
    */
-  void encode(FriendlyByteBuf buffer, P parent);
+  default void encode(FriendlyByteBuf buffer, P parent) {
+    encode(buffer, parent, TypedMap.EMPTY);
+  }
+
+  default void encode(FriendlyByteBuf buffer, P parent, TypedMap context) {
+    encode(buffer, parent);
+  }
 }

@@ -196,10 +196,15 @@ public class EitherLoadable {
 
     @Override
     default void encode(FriendlyByteBuf buffer, T object) {
+      encode(buffer, object, TypedMap.EMPTY);
+    }
+
+    @Override
+    default void encode(FriendlyByteBuf buffer, T object, TypedMap context) {
       List<? extends Streamable<T>> networks = network();
       // size 1 means we have a fixed network logic, use that
       if (networks.size() == 1) {
-        networks.get(0).encode(buffer, object);
+        networks.get(0).encode(buffer, object, context);
       } else {
         // we need to be able to recover which loadable was used on deserialization, so use the index in our list
         Loadable<?> objectLoadable = object.loadable();
@@ -208,7 +213,7 @@ public class EitherLoadable {
           // indexof would do deep comparison, but reference comparison is way more efficient here
           if (network == objectLoadable) {
             buffer.writeVarInt(i);
-            network.encode(buffer, object);
+            network.encode(buffer, object, context);
             return;
           }
         }
@@ -234,10 +239,15 @@ public class EitherLoadable {
       throw new JsonSyntaxException("JSON at " + key + " must be one of: array, primitive");
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public JsonElement serialize(T object) {
-      return ((Loadable<T>)object.loadable()).serialize(object);
+      return serialize(object, TypedMap.EMPTY);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public JsonElement serialize(T object, TypedMap context) {
+      return ((Loadable<T>)object.loadable()).serialize(object, context);
     }
 
     @Override
@@ -253,10 +263,15 @@ public class EitherLoadable {
       return deserializeObject(json, context, "[root]");
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void serialize(T object, JsonObject json) {
-      ((RecordLoadable<T>)object.loadable()).serialize(object, json);
+      serialize(object, json, TypedMap.EMPTY);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void serialize(T object, JsonObject json, TypedMap context) {
+      ((RecordLoadable<T>)object.loadable()).serialize(object, json, context);
     }
 
     @Override
@@ -266,7 +281,12 @@ public class EitherLoadable {
 
     @Override
     public void encode(FriendlyByteBuf buffer, T object) {
-      EitherImpl.super.encode(buffer, object);
+      encode(buffer, object, TypedMap.EMPTY);
+    }
+
+    @Override
+    public void encode(FriendlyByteBuf buffer, T object, TypedMap context) {
+      EitherImpl.super.encode(buffer, object, context);
     }
   }
 }

@@ -17,7 +17,7 @@ public interface IRecipeContainer extends Container, RecipeInput {
 
   @Override
   default boolean isEmpty() {
-    return getContainerSize() == 0;
+    return RecipeInput.super.isEmpty();
   }
   /* Unsupported operations */
 

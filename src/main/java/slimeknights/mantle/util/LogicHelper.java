@@ -52,4 +52,19 @@ public class LogicHelper {
   public static <T> T orElseNull(Optional<T> optional) {
     return optional.orElse(null);
   }
+
+  @SafeVarargs
+  public static <T> T[] append(T[] first, T... second) {
+    T[] result = java.util.Arrays.copyOf(first, first.length + second.length);
+    System.arraycopy(second, 0, result, first.length, second.length);
+    return result;
+  }
+
+  @SafeVarargs
+  @SuppressWarnings("unchecked")
+  public static <T> T[] prepend(T[] first, T... second) {
+    T[] result = (T[])java.util.Arrays.copyOf(second, first.length + second.length, first.getClass());
+    System.arraycopy(first, 0, result, second.length, first.length);
+    return result;
+  }
 }

@@ -28,7 +28,7 @@ public class ReplaceItemLootModifier extends LootModifier {
     inst.group(
       MantleCodecs.INGREDIENT.fieldOf("original").forGetter(m -> m.original),
       ItemOutput.REQUIRED_STACK_CODEC.fieldOf("replacement").forGetter(m -> m.replacement),
-      MantleCodecs.LOOT_FUNCTIONS.fieldOf("functions").forGetter(m -> m.functions)
+      MantleCodecs.LOOT_FUNCTIONS.optionalFieldOf("functions", new LootItemFunction[0]).forGetter(m -> m.functions)
     )).apply(inst, ReplaceItemLootModifier::new));
 
   /** Ingredient to test for the original item */

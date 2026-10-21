@@ -117,6 +117,7 @@ public class ClientEvents {
   /** Registers native 26.1 item-model replacements for Mantle's dynamic layers. */
   @SubscribeEvent
   static void registerItemModels(RegisterItemModelsEvent event) {
+    event.register(slimeknights.mantle.client.model.ItemKeyModel.ID, slimeknights.mantle.client.model.ItemKeyModel.Unbaked.MAP_CODEC);
     event.register(Mantle.getResource("item_layer"), NativeMantleItemModel.ItemLayerUnbaked.MAP_CODEC);
     event.register(Mantle.getResource("custom_data_key"), NativeMantleItemModel.CustomDataKeyUnbaked.MAP_CODEC);
   }
@@ -127,6 +128,7 @@ public class ClientEvents {
     event.registerModel(Mantle.getResource("connected"), NativeConnectedBlockStateModel.Unbaked.MAP_CODEC);
     event.registerModel(Mantle.getResource("retextured"), NativeRetexturedBlockStateModel.Unbaked.MAP_CODEC);
     event.registerModel(Mantle.getResource("colored_block"), NativeColoredBlockStateModel.Unbaked.MAP_CODEC);
+    event.registerModel(slimeknights.mantle.client.model.FallbackModelLoader.ID, slimeknights.mantle.client.model.FallbackModelLoader.Unbaked.MAP_CODEC);
     event.registerModel(Mantle.getResource("composite"), NativeCompositeBlockStateModel.Unbaked.MAP_CODEC);
   }
 
@@ -181,7 +183,7 @@ public class ClientEvents {
     Minecraft minecraft = Minecraft.getInstance();
     Options settings = minecraft.options;
     AttackIndicatorStatus indicator = settings.attackIndicator().get();
-    if (minecraft.player == null || minecraft.gameMode == null || minecraft.gameMode.getPlayerMode() == GameType.SPECTATOR || indicator == AttackIndicatorStatus.OFF) {
+    if (settings.hideGui || minecraft.player == null || minecraft.gameMode == null || minecraft.gameMode.getPlayerMode() == GameType.SPECTATOR || indicator == AttackIndicatorStatus.OFF) {
       return;
     }
 
@@ -246,7 +248,7 @@ public class ClientEvents {
     }
     // must not be in a screen, though chat is fine
     Minecraft minecraft = Minecraft.getInstance();
-    if (minecraft.screen != null && minecraft.screen.getClass() != ChatScreen.class) {
+    if (minecraft.options.hideGui || minecraft.screen != null && minecraft.screen.getClass() != ChatScreen.class) {
       return;
     }
     // must have a hit result
@@ -274,7 +276,8 @@ public class ClientEvents {
       gaugeContainer = minecraft.level.getBlockEntity(pos);
     }
     // must have a block entity behind the gauge that is not blacklisted
-    if (gaugeContainer == null || RegistryHelper.contains(BuiltInRegistries.BLOCK_ENTITY_TYPE, MantleTags.BlockEntities.GAUGE_BLACKLIST, gaugeContainer.getType())) {
+    if (gaugeContainer == null || gaugeContainer.getBlockState().is(MantleTags.Blocks.GAUGE_BLACKLIST)
+        || RegistryHelper.contains(BuiltInRegistries.BLOCK_ENTITY_TYPE, MantleTags.BlockEntities.GAUGE_BLACKLIST, gaugeContainer.getType())) {
       return;
     }
     ResourceHandler<FluidResource> handler = minecraft.level.getCapability(Capabilities.Fluid.BLOCK, containerPos, side);
@@ -287,7 +290,8 @@ public class ClientEvents {
     List<Component> tooltip;
     if (fluid.isEmpty()) {
       tooltip = List.of(GaugeBlock.formatCapacity(capacity));
-    } else if (RegistryHelper.contains(BuiltInRegistries.BLOCK_ENTITY_TYPE, MantleTags.BlockEntities.HIDES_GAUGE_AMOUNT, gaugeContainer.getType())) {
+    } else if (gaugeContainer.getBlockState().is(MantleTags.Blocks.HIDES_GAUGE_AMOUNT)
+        || RegistryHelper.contains(BuiltInRegistries.BLOCK_ENTITY_TYPE, MantleTags.BlockEntities.HIDES_GAUGE_AMOUNT, gaugeContainer.getType())) {
       // in the tag, don't show capacity
       Identifier id = BuiltInRegistries.FLUID.getKey(fluid.getFluid());
       tooltip = new ArrayList<>(3);

@@ -68,4 +68,17 @@ public class DefaultRetexturedBlockEntity extends MantleBlockEntity implements I
       RetexturedHelper.onTextureUpdated(this);
     }
   }
+
+  @Override protected void applyImplicitComponents(net.minecraft.core.component.DataComponentGetter components) {
+    super.applyImplicitComponents(components);
+    texture = components.getOrDefault(slimeknights.mantle.registration.MantleData.BLOCK_TEXTURE.get(), Blocks.AIR);
+  }
+  @Override protected void collectImplicitComponents(net.minecraft.core.component.DataComponentMap.Builder components) {
+    super.collectImplicitComponents(components);
+    IRetexturedBlockEntity.collectImplicitComponents(this, components);
+  }
+  @Override public void removeComponentsFromTag(net.minecraft.world.level.storage.ValueOutput output) {
+    super.removeComponentsFromTag(output);
+    output.discard(TAG_TEXTURE);
+  }
 }

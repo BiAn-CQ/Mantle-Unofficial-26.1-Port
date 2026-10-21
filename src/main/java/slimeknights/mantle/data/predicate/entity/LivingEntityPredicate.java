@@ -23,7 +23,12 @@ public interface LivingEntityPredicate extends IJsonPredicate<LivingEntity> {
   /** Predicate that matches all entities */
   LivingEntityPredicate NONE = simple(entity -> false);
   /** Loader for block state predicates */
-  RegistryPredicateRegistry<EntityType<?>,LivingEntity> LOADER = new RegistryPredicateRegistry<>("Entity Predicate", ANY, NONE, Loadables.ENTITY_TYPE, Entity::getType, "entities", Loadables.ENTITY_TYPE_TAG, (tag, entity) -> entity.getType().builtInRegistryHolder().is(tag));
+  Loader LOADER = new Loader();
+  class Loader extends slimeknights.mantle.data.predicate.FallbackPredicateRegistry<LivingEntity,Entity> {
+    Loader() { super("Living Entity Predicate", ANY, NONE, EntityPredicate.LOADER, entity -> entity, "entity"); }
+    public IJsonPredicate<LivingEntity> tag(TagKey<EntityType<?>> tag) { return fallback(EntityPredicate.tag(tag)); }
+    public IJsonPredicate<LivingEntity> setOf(EntityType<?>... entities) { return fallback(EntityPredicate.set(entities)); }
+  }
 
   /** Gets an inverted condition */
   @Override
@@ -86,14 +91,23 @@ public interface LivingEntityPredicate extends IJsonPredicate<LivingEntity> {
 
   /* Helper methods */
 
+  static IJsonPredicate<net.minecraft.world.entity.Entity> asEntity(IJsonPredicate<LivingEntity> predicate) {
+    return new LivingEntityEntityPredicate(predicate);
+  }
+
+  static IJsonPredicate<LivingEntity> fallback(IJsonPredicate<net.minecraft.world.entity.Entity> predicate) {
+    return LOADER.fallback(predicate);
+  }
+
+
   /** Creates an entity set predicate */
   static IJsonPredicate<LivingEntity> set(EntityType<?>... types) {
-    return LOADER.setOf(types);
+    return fallback(EntityPredicate.set(types));
   }
 
   /** Creates a tag predicate */
   static IJsonPredicate<LivingEntity> tag(TagKey<EntityType<?>> tag) {
-    return LOADER.tag(tag);
+    return fallback(EntityPredicate.tag(tag));
   }
 
   /** Creates an and predicate */

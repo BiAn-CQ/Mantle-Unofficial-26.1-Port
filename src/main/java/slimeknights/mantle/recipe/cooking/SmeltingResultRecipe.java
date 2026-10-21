@@ -24,7 +24,7 @@ public class SmeltingResultRecipe extends SmeltingRecipe implements CookingResul
     Ingredient.CODEC.fieldOf("ingredient").forGetter(SmeltingResultRecipe::input),
     ItemOutput.REQUIRED_STACK_CODEC.fieldOf("result").forGetter(SmeltingResultRecipe::getResult),
     Codec.FLOAT.optionalFieldOf("experience", 0f).forGetter(SmeltingResultRecipe::experience),
-    Codec.INT.optionalFieldOf("cookingtime", 200).forGetter(SmeltingResultRecipe::cookingTime)
+    CookingResultRecipe.cookingTimeField(200).forGetter(SmeltingResultRecipe::cookingTime)
   ).apply(instance, SmeltingResultRecipe::new));
   public static final StreamCodec<RegistryFriendlyByteBuf, SmeltingResultRecipe> STREAM_CODEC = StreamCodec.composite(
     Recipe.CommonInfo.STREAM_CODEC, recipe -> recipe.commonInfo,
@@ -40,12 +40,19 @@ public class SmeltingResultRecipe extends SmeltingRecipe implements CookingResul
 
   public SmeltingResultRecipe(Recipe.CommonInfo commonInfo, AbstractCookingRecipe.CookingBookInfo bookInfo,
                               Ingredient ingredient, ItemOutput result, float experience, int cookingTime) {
-    super(commonInfo, bookInfo, ingredient, CookingResultRecipe.template(result), experience, cookingTime);
+    super(commonInfo, bookInfo, ingredient, null, experience, cookingTime);
     this.result = result;
   }
 
+  // The superclass stores a concrete template, while tag and datagen outputs resolve lazily.
+  // All result access is delegated here instead of populating its unused result field.
+  @Override protected net.minecraft.world.item.ItemStackTemplate result() { return CookingResultRecipe.template(result); }
+
   @Override public ItemOutput getResult() { return result; }
   @Override public ItemStack assemble(SingleRecipeInput input) { return result.copy(); }
+  @Override public java.util.List<net.minecraft.world.item.crafting.display.RecipeDisplay> display() {
+    return CookingResultRecipe.display(this,result,furnaceIcon());
+  }
 
   @Override @SuppressWarnings({"unchecked", "rawtypes"})
   public RecipeSerializer<SmeltingRecipe> getSerializer() {

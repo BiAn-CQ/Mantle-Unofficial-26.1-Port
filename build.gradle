@@ -25,6 +25,7 @@ java {
 sourceSets.main {
     resources {
         srcDir('src/generated/resources')
+        srcDir('src/generated/server')
         exclude('.cache')
     }
 }
@@ -64,6 +65,12 @@ neoForge {
             clientData()
             programArguments.addAll '--mod', project.mod_id, '--all',
                     '--output', file('src/generated/resources/').absolutePath,
+                    '--existing', file('src/main/resources/').absolutePath
+        }
+        serverData {
+            serverData()
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                    '--output', file('src/generated/server/').absolutePath,
                     '--existing', file('src/main/resources/').absolutePath
         }
         configureEach {

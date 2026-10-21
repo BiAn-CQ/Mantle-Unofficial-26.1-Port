@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 
 /** Item implementing all standard book behaviors, just requires calling methods from {@link slimeknights.mantle.client.book.data.BookData} in a few abstract methods. */
 @SuppressWarnings("unused")  // API
-public abstract class AbstractBookItem extends LecternBookItem {
+public abstract class AbstractBookItem extends slimeknights.mantle.item.book.LecternBookItem {
   private static final Component CLICK_TO_OPEN = Mantle.makeComponent("item", "book.click_to_open").withStyle(ChatFormatting.YELLOW, ChatFormatting.ITALIC);
 
   public AbstractBookItem(Properties properties) {

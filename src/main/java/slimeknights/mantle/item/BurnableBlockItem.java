@@ -9,4 +9,7 @@ public class BurnableBlockItem extends BlockItem {
     super(blockIn, builder);
     this.burnTime = burnTime;
   }
+
+  @Override
+  public int getBurnTime(net.minecraft.world.item.ItemStack stack, net.minecraft.world.item.crafting.RecipeType<?> recipeType, net.minecraft.world.level.block.entity.FuelValues fuelValues) { return burnTime; }
 }

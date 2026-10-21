@@ -20,7 +20,11 @@ public record DirectField<T,P>(RecordLoadable<T> loadable, Function<P,T> getter)
 
   @Override
   public void serialize(P parent, JsonObject json) {
-    loadable.serialize(getter.apply(parent), json);
+    serialize(parent, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(P parent, JsonObject json, TypedMap context) {
+    loadable.serialize(getter.apply(parent), json, context);
   }
 
   @Override

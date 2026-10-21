@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import com.mojang.datafixers.util.Either;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementHolder;
-import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
@@ -19,7 +18,6 @@ import net.neoforged.neoforge.common.conditions.ICondition;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
-import java.util.stream.StreamSupport;
 
 @SuppressWarnings("unused")
 @RequiredArgsConstructor(staticName = "fromShaped")
@@ -47,7 +45,7 @@ public class ShapedRetexturedRecipeBuilder {
    * @return Builder instance
    */
   public ShapedRetexturedRecipeBuilder setSource(TagKey<Item> tag) {
-    return setSource(Ingredient.of(StreamSupport.stream(BuiltInRegistries.ITEM.getTagOrEmpty(tag).spliterator(), false).map(Holder::value)));
+    return setSource(Ingredient.of(net.minecraft.core.HolderSet.emptyNamed(BuiltInRegistries.ITEM, tag)));
   }
 
   /** Sets the texture source to a key from the texture map. Is not validated as that is too much work. */

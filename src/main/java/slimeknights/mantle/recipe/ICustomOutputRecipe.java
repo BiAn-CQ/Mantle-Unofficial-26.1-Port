@@ -7,7 +7,7 @@ import slimeknights.mantle.recipe.container.IRecipeContainer;
 /**
  * Compatibility bridge for recipes with non-item outputs.
  */
-public interface ICustomOutputRecipe<C extends IRecipeContainer> extends ICommonRecipe<C> {
+public interface ICustomOutputRecipe<C extends net.minecraft.world.item.crafting.RecipeInput> extends ICommonRecipe<C> {
   @Override
   @Deprecated
   default ItemStack getResultItem(RegistryAccess access) {

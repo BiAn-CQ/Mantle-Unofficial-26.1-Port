@@ -71,6 +71,11 @@ public class WrapperSlot extends Slot {
   }
 
   @Override
+  public void setByPlayer(ItemStack stack, ItemStack oldStack) {
+    this.parent.setByPlayer(stack, oldStack);
+  }
+
+  @Override
   public void set(ItemStack stack) {
     this.parent.set(stack);
   }
@@ -131,6 +136,11 @@ public class WrapperSlot extends Slot {
   }
 
   @Override
+  public ItemStack safeInsert(ItemStack stack) {
+    return this.parent.safeInsert(stack);
+  }
+
+  @Override
   public boolean allowModification(Player pPlayer) {
     return this.parent.allowModification(pPlayer);
   }
@@ -138,5 +148,10 @@ public class WrapperSlot extends Slot {
   @Override
   public boolean isHighlightable() {
     return this.parent.isHighlightable();
+  }
+
+  @Override
+  public boolean isFake() {
+    return this.parent.isFake();
   }
 }

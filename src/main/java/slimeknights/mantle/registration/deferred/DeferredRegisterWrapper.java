@@ -60,6 +60,31 @@ public abstract class DeferredRegisterWrapper<T> {
   }
 
 
+  /** Registers a factory with the final registry ID. */
+  protected <I extends T> Supplier<? extends I> registerMapped(String name, java.util.function.Function<Identifier,? extends I> factory) {
+    return register.register(name, () -> factory.apply(resource(name)));
+  }
+
+  /** Registers enum variants with a caller-provided name function. */
+  public <E extends Enum<E>, I extends T> EnumObject<E,I> registerEnum(E[] values, java.util.function.Function<? super E,String> names, java.util.function.Function<E,? extends I> factory) {
+    return registerEnum(values, names, (id, value) -> factory.apply(value));
+  }
+  public <E extends Enum<E>, I extends T> EnumObject<E,I> registerEnum(E[] values, java.util.function.Function<? super E,String> names, BiFunction<Identifier,E,? extends I> factory) {
+    return EnumObject.generate(values, value -> registerMapped(names.apply(value), id -> factory.apply(id, value)));
+  }
+  public <E extends Enum<E>, I extends T> EnumObject<E,I> registerEnum(E[] values, String name, java.util.function.Function<E,? extends I> factory) {
+    return registerEnum(values, EnumDeferredRegister.suffix(name), factory);
+  }
+  public <E extends Enum<E>, I extends T> EnumObject<E,I> registerEnum(E[] values, String name, BiFunction<Identifier,E,? extends I> factory) {
+    return registerEnum(values, EnumDeferredRegister.suffix(name), factory);
+  }
+  public <E extends Enum<E>, I extends T> EnumObject<E,I> registerEnum(String name, E[] values, java.util.function.Function<E,? extends I> factory) {
+    return registerEnum(values, EnumDeferredRegister.prefix(name), factory);
+  }
+  public <E extends Enum<E>, I extends T> EnumObject<E,I> registerEnum(String name, E[] values, BiFunction<Identifier,E,? extends I> factory) {
+    return registerEnum(values, EnumDeferredRegister.prefix(name), factory);
+  }
+
   /* Enum objects */
 
   /** Gets the name of an enum value */
@@ -74,7 +99,7 @@ public abstract class DeferredRegisterWrapper<T> {
    * @param register  Function to register an entry
    * @return  EnumObject mapping between different block types
    */
-  protected static <E extends Enum<E>, V extends T, T> EnumObject<E,V> registerEnum(E[] values, String name, BiFunction<String,E,Supplier<? extends V>> register) {
+  protected static <E extends Enum<E>, V extends T, T> EnumObject<E,V> registerEnumEntries(E[] values, String name, BiFunction<String,E,Supplier<? extends V>> register) {
     if (values.length == 0) {
       throw new IllegalArgumentException("Must have at least one value");
     }
@@ -93,7 +118,7 @@ public abstract class DeferredRegisterWrapper<T> {
    * @param register  Function to register an entry
    * @return  EnumObject mapping between different block types
    */
-  protected static <E extends Enum<E>, V extends T, T> EnumObject<E,V> registerEnum(String name, E[] values, BiFunction<String,E,Supplier<? extends V>> register) {
+  protected static <E extends Enum<E>, V extends T, T> EnumObject<E,V> registerEnumEntries(String name, E[] values, BiFunction<String,E,Supplier<? extends V>> register) {
     if (values.length == 0) {
       throw new IllegalArgumentException("Must have at least one value");
     }

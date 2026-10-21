@@ -22,6 +22,16 @@ import java.util.stream.StreamSupport;
 public class RegistryHelper {
   private RegistryHelper() {}
 
+  @SuppressWarnings("unchecked")
+  public static <T> ResourceKey<? extends Registry<T>> castKey(ResourceKey<? extends Registry<?>> registry) {
+    return (ResourceKey<? extends Registry<T>>)registry;
+  }
+
+  public static <T> java.util.Optional<Holder.Reference<T>> lookup(net.minecraft.resources.RegistryOps.RegistryInfoLookup lookup,
+      ResourceKey<? extends Registry<T>> registry, net.minecraft.resources.Identifier name) {
+    return lookup.lookup(registry).flatMap(info -> info.getter().get(ResourceKey.create(registry, name)));
+  }
+
   /** Gets the registry for the given key, dealing with tags */
   @Nullable
   @SuppressWarnings({"unchecked"})

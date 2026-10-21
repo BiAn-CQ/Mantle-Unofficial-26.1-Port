@@ -53,7 +53,11 @@ public class MappedLoadable<F,T> implements Loadable<T> {
 
   @Override
   public JsonElement serialize(T object) {
-    return base.serialize(to.apply(object, ErrorFactory.RUNTIME));
+    return serialize(object, TypedMap.EMPTY);
+  }
+
+  public JsonElement serialize(T object, TypedMap context) {
+    return base.serialize(to.apply(object, ErrorFactory.RUNTIME), context);
   }
 
   @Override
@@ -63,7 +67,11 @@ public class MappedLoadable<F,T> implements Loadable<T> {
 
   @Override
   public void encode(FriendlyByteBuf buffer, T object) {
-    base.encode(buffer, to.apply(object, ErrorFactory.ENCODER_EXCEPTION));
+    encode(buffer, object, TypedMap.EMPTY);
+  }
+
+  public void encode(FriendlyByteBuf buffer, T object, TypedMap context) {
+    base.encode(buffer, to.apply(object, ErrorFactory.ENCODER_EXCEPTION), context);
   }
 
   /** Implementation for records */
@@ -81,7 +89,11 @@ public class MappedLoadable<F,T> implements Loadable<T> {
 
     @Override
     public void serialize(T object, JsonObject json) {
-      base.serialize(to.apply(object, ErrorFactory.RUNTIME), json);
+      serialize(object, json, TypedMap.EMPTY);
+    }
+
+    public void serialize(T object, JsonObject json, TypedMap context) {
+      base.serialize(to.apply(object, ErrorFactory.RUNTIME), json, context);
     }
 
     @Override
@@ -106,6 +118,11 @@ public class MappedLoadable<F,T> implements Loadable<T> {
     @Override
     public String getString(T object) {
       return base.getString(to.apply(object, ErrorFactory.RUNTIME));
+    }
+
+    @Override
+    public String getString(T object, TypedMap context) {
+      return base.getString(to.apply(object, ErrorFactory.RUNTIME), context);
     }
   }
 }

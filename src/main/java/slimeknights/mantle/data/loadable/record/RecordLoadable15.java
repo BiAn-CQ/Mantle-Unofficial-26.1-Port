@@ -49,21 +49,25 @@ record RecordLoadable15<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,R>(
 
   @Override
   public void serialize(R object, JsonObject json) {
-    fieldA.serialize(object, json);
-    fieldB.serialize(object, json);
-    fieldC.serialize(object, json);
-    fieldD.serialize(object, json);
-    fieldE.serialize(object, json);
-    fieldF.serialize(object, json);
-    fieldG.serialize(object, json);
-    fieldH.serialize(object, json);
-    fieldI.serialize(object, json);
-    fieldJ.serialize(object, json);
-    fieldK.serialize(object, json);
-    fieldL.serialize(object, json);
-    fieldM.serialize(object, json);
-    fieldN.serialize(object, json);
-    fieldO.serialize(object, json);
+    serialize(object, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(R object, JsonObject json, TypedMap context) {
+    fieldA.serialize(object, json, context);
+    fieldB.serialize(object, json, context);
+    fieldC.serialize(object, json, context);
+    fieldD.serialize(object, json, context);
+    fieldE.serialize(object, json, context);
+    fieldF.serialize(object, json, context);
+    fieldG.serialize(object, json, context);
+    fieldH.serialize(object, json, context);
+    fieldI.serialize(object, json, context);
+    fieldJ.serialize(object, json, context);
+    fieldK.serialize(object, json, context);
+    fieldL.serialize(object, json, context);
+    fieldM.serialize(object, json, context);
+    fieldN.serialize(object, json, context);
+    fieldO.serialize(object, json, context);
   }
 
   @Override
@@ -89,20 +93,24 @@ record RecordLoadable15<A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,R>(
 
   @Override
   public void encode(FriendlyByteBuf buffer, R object) {
-    fieldA.encode(buffer, object);
-    fieldB.encode(buffer, object);
-    fieldC.encode(buffer, object);
-    fieldD.encode(buffer, object);
-    fieldE.encode(buffer, object);
-    fieldF.encode(buffer, object);
-    fieldG.encode(buffer, object);
-    fieldH.encode(buffer, object);
-    fieldI.encode(buffer, object);
-    fieldJ.encode(buffer, object);
-    fieldK.encode(buffer, object);
-    fieldL.encode(buffer, object);
-    fieldM.encode(buffer, object);
-    fieldN.encode(buffer, object);
-    fieldO.encode(buffer, object);
+    encode(buffer, object, TypedMap.EMPTY);
+  }
+
+  public void encode(FriendlyByteBuf buffer, R object, TypedMap context) {
+    fieldA.encode(buffer, object, context);
+    fieldB.encode(buffer, object, context);
+    fieldC.encode(buffer, object, context);
+    fieldD.encode(buffer, object, context);
+    fieldE.encode(buffer, object, context);
+    fieldF.encode(buffer, object, context);
+    fieldG.encode(buffer, object, context);
+    fieldH.encode(buffer, object, context);
+    fieldI.encode(buffer, object, context);
+    fieldJ.encode(buffer, object, context);
+    fieldK.encode(buffer, object, context);
+    fieldL.encode(buffer, object, context);
+    fieldM.encode(buffer, object, context);
+    fieldN.encode(buffer, object, context);
+    fieldO.encode(buffer, object, context);
   }
 }

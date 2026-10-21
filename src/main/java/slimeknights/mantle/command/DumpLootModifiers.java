@@ -27,7 +27,7 @@ import java.util.List;
 /** Command to dump global loot modifiers */
 public class DumpLootModifiers {
   /** Resource location of the global loot manager "tag" */
-  protected static final Identifier GLOBAL_LOOT_MODIFIERS = Identifier.fromNamespaceAndPath("forge", "loot_modifiers/global_loot_modifiers.json");
+  protected static final Identifier GLOBAL_LOOT_MODIFIERS = Identifier.fromNamespaceAndPath("neoforge", "loot_modifiers/global_loot_modifiers.json");
   /** Path for saving the loot modifiers */
   private static final String LOOT_MODIFIER_PATH = GLOBAL_LOOT_MODIFIERS.getNamespace() + "/" + GLOBAL_LOOT_MODIFIERS.getPath();
 

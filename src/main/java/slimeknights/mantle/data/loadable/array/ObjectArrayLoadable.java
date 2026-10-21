@@ -49,24 +49,36 @@ public record ObjectArrayLoadable<T>(Loadable<T> base, IntFunction<T[]> construc
 
   /** Serializes the element to JSON, handling nulls */
   private JsonElement serializeElement(@Nullable T object, int index) {
+    return serializeElement(object, index, TypedMap.EMPTY);
+  }
+
+  private JsonElement serializeElement(@Nullable T object, int index, TypedMap context) {
     if (object == null) {
       if (allowNull) {
         return JsonNull.INSTANCE;
       }
       throw new NullPointerException("Received null at index " + index + " in ArrayLoadable not supporting null");
     }
-    return base.serialize(object);
+    return base.serialize(object, context);
   }
 
   @Override
   public JsonElement serializeFirst(T[] object) {
-    return serializeElement(object[0], 0);
+    return serializeFirst(object, TypedMap.EMPTY);
+  }
+
+  public JsonElement serializeFirst(T[] object, TypedMap context) {
+    return serializeElement(object[0], 0, context);
   }
 
   @Override
   public void serializeAll(JsonArray array, T[] object) {
+    serializeAll(array, object, TypedMap.EMPTY);
+  }
+
+  public void serializeAll(JsonArray array, T[] object, TypedMap context) {
     for (int i = 0; i < object.length; i++) {
-      array.add(serializeElement(object[i], i));
+      array.add(serializeElement(object[i], i, context));
     }
   }
 
@@ -86,6 +98,10 @@ public record ObjectArrayLoadable<T>(Loadable<T> base, IntFunction<T[]> construc
 
   @Override
   public void encode(FriendlyByteBuf buffer, T[] array) {
+    encode(buffer, array, TypedMap.EMPTY);
+  }
+
+  public void encode(FriendlyByteBuf buffer, T[] array, TypedMap context) {
     buffer.writeVarInt(array.length);
     for (T element : array) {
       if (allowNull) {
@@ -94,7 +110,7 @@ public record ObjectArrayLoadable<T>(Loadable<T> base, IntFunction<T[]> construc
         Objects.requireNonNull(element);
       }
       if (element != null) {
-        base.encode(buffer, element);
+        base.encode(buffer, element, context);
       }
     }
   }

@@ -1,0 +1,18 @@
+{
+  "type": "mantle:fill_item",
+  "conditions": [
+    {
+      "type": "mantle:tag_filled",
+      "registry": "minecraft:fluid",
+      "tag": "c:honey"
+    }
+  ],
+  "fluid": {
+    "amount": 250,
+    "tag": "c:honey"
+  },
+  "input": "minecraft:glass_bottle",
+  "result": {
+    "id": "minecraft:honey_bottle"
+  }
+}

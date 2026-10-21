@@ -1,0 +1,23 @@
+{
+  "type": "mantle:fill_copy_data",
+  "conditions": [
+    {
+      "type": "mantle:tag_filled",
+      "registry": "minecraft:fluid",
+      "tag": "c:potion"
+    },
+    {
+      "type": "mantle:tag_filled",
+      "tag": "c:bottles/lingering"
+    }
+  ],
+  "copy": "minecraft:potion_contents",
+  "fluid": {
+    "amount": 250,
+    "tag": "c:potion"
+  },
+  "input": "#c:bottles/lingering",
+  "result": {
+    "id": "minecraft:lingering_potion"
+  }
+}

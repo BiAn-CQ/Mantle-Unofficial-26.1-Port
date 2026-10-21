@@ -47,6 +47,11 @@ public enum IngredientLoadable implements Loadable<Ingredient> {
     return new Scope(previous);
   }
 
+  /** Native operations associated with a legacy Gson adapter, when one is active. */
+  public static DynamicOps<?> activeOps() {
+    return ACTIVE_OPS.get();
+  }
+
   public static final class Scope implements AutoCloseable {
     private final DynamicOps<?> previous;
 
@@ -93,12 +98,26 @@ public enum IngredientLoadable implements Loadable<Ingredient> {
     }
     Optional<TagKey<Item>> namedTag = object.getValues().unwrapKey();
     if (namedTag.isPresent()) {
-      return Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, object).getOrThrow();
+      return TagKey.hashedCodec(Registries.ITEM).encodeStart(JsonOps.INSTANCE, namedTag.get()).getOrThrow();
     }
     DynamicOps<?> activeOps = ACTIVE_OPS.get();
     return activeOps == null
       ? Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, object).getOrThrow()
       : serializeWithOps(activeOps, object);
+  }
+
+  @Override
+  public JsonElement serialize(Ingredient object, TypedMap context) {
+    if (!object.isCustom() && object.getValues().unwrapKey().isPresent()) {
+      return serialize(object);
+    }
+    if (!context.containsKey(ContextKey.REGISTRY_LOOKUP) && !context.containsKey(ContextKey.REGISTRY_ACCESS)) {
+      return serialize(object);
+    }
+    if (!object.isCustom() && this == DISALLOW_EMPTY && object.getValues().unwrapKey().isEmpty() && object.isEmpty()) {
+      throw new IllegalArgumentException("Ingredient cannot be empty");
+    }
+    return Ingredient.CODEC.encodeStart(ContextKey.optionalRegistryOps(context), object).getOrThrow();
   }
 
   /** Encodes an ingredient with the registry context supplied to a Gson adapter. */

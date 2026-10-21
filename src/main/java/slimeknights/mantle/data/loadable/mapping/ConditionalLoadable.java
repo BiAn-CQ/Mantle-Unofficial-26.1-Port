@@ -27,7 +27,7 @@ public record ConditionalLoadable<T extends IHaveLoader>(GenericLoaderRegistry<T
     IContext conditionContext = context.getOrDefault(ContextKey.CONDITION_CONTEXT, IContext.TAGS_INVALID);
     // if the condition matches, use the true value
     if (!json.has("conditions") || JsonHelper.deserializeConditions(json.get("conditions")).stream().allMatch(condition -> condition.test(conditionContext))) {
-      return registry.getIfPresent(json, "if_true");
+      return registry.getIfPresent(json, "if_true", context);
     }
     // loader can define a default instance for false if they have one. Otherwise false is required.
     if (defaultIfFalse != null) {
@@ -39,12 +39,16 @@ public record ConditionalLoadable<T extends IHaveLoader>(GenericLoaderRegistry<T
   @SuppressWarnings("unchecked") // loader is invalid if not
   @Override
   public void serialize(T object, JsonObject json) {
+    serialize(object, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(T object, JsonObject json, TypedMap context) {
     ConditionalObject<T> conditional = (ConditionalObject<T>) object;
     json.add("conditions", JsonHelper.serializeConditions(conditional.conditions()));
-    json.add("if_true", registry.serialize(conditional.ifTrue()));
+    json.add("if_true", registry.serialize(conditional.ifTrue(), context));
     T ifFalse = conditional.ifFalse();
     if (ifFalse != defaultIfFalse) {
-      json.add("if_false", registry.serialize(ifFalse));
+      json.add("if_false", registry.serialize(ifFalse, context));
     }
   }
 
@@ -55,6 +59,10 @@ public record ConditionalLoadable<T extends IHaveLoader>(GenericLoaderRegistry<T
 
   @Override
   public void encode(FriendlyByteBuf buffer, T value) {
+    encode(buffer, value, TypedMap.EMPTY);
+  }
+
+  public void encode(FriendlyByteBuf buffer, T value, TypedMap context) {
     throw new UnsupportedOperationException("Conditional loadable should always resolve to a specific instance. This should never happen.");
   }
 

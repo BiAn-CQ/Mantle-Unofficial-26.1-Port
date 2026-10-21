@@ -27,5 +27,12 @@ public interface Streamable<T> {
    * @param value  Object to write
    * @throws io.netty.handler.codec.EncoderException  If unable to encode a value to network
    */
-  void encode(FriendlyByteBuf buffer, T value);
+  default void encode(FriendlyByteBuf buffer, T value) {
+    encode(buffer, value, TypedMap.EMPTY);
+  }
+
+  /** Writes with additional context, retaining the original entry point for existing callers. */
+  default void encode(FriendlyByteBuf buffer, T value, TypedMap context) {
+    encode(buffer, value);
+  }
 }

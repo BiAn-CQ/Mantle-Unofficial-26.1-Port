@@ -54,9 +54,9 @@ public class MantleCommand {
     TagSourceArgument.registerSuggestions();
 
     // register interesting sources
-    SourcesCommand.register("loot_tables", (context, builder)
+    SourcesCommand.register("loot_tables", Registries.elementsDirPath(Registries.LOOT_TABLE), ".json", (context, builder)
       -> SharedSuggestionProvider.suggestResource(context.getSource().getServer().reloadableRegistries().lookup().lookupOrThrow(Registries.LOOT_TABLE).listElementIds().map(ResourceKey::identifier), builder));
-    SourcesCommand.register("recipes", (context, builder)
+    SourcesCommand.register("recipes", Registries.elementsDirPath(Registries.RECIPE), ".json", (context, builder)
       -> SharedSuggestionProvider.suggestResource(context.getSource().getServer().getRecipeManager().getRecipes().stream().map(RecipeHolder::id).map(ResourceKey::identifier), builder));
 
     // add command listener

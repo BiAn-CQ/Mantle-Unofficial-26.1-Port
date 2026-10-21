@@ -19,7 +19,8 @@ class ResourceJsonTest {
   private static final Path PROJECT_ROOT = Path.of(System.getProperty("mantle.projectDir"));
   private static final List<Path> ROOTS = List.of(
     PROJECT_ROOT.resolve(Path.of("src", "main", "resources")),
-    PROJECT_ROOT.resolve(Path.of("src", "generated", "resources"))
+    PROJECT_ROOT.resolve(Path.of("src", "generated", "resources")),
+    PROJECT_ROOT.resolve(Path.of("src", "generated", "server"))
   );
 
   @TestFactory

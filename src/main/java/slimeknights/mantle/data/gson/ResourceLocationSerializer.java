@@ -28,6 +28,10 @@ public class ResourceLocationSerializer<T> implements JsonDeserializer<T>, JsonS
     this.modId = modId;
   }
 
+  public ResourceLocationSerializer(java.util.function.BiFunction<String,String,T> constructor, String modId) {
+    this(value -> { int colon = value.indexOf(':'); return constructor.apply(value.substring(0, colon), value.substring(colon + 1)); }, modId);
+  }
+
   /** Creates an adapter for vanilla identifiers. */
   public static ResourceLocationSerializer<Identifier> resourceLocation(String modId) {
     return new ResourceLocationSerializer<>(Identifier::parse, modId);
@@ -41,7 +45,9 @@ public class ResourceLocationSerializer<T> implements JsonDeserializer<T>, JsonS
   @Override
   public T deserialize(JsonElement element, Type type, JsonDeserializationContext context) throws JsonParseException {
     String location = GsonHelper.convertToString(element, "location");
-    if (!location.contains(":")) {
+    if (location.startsWith(":")) {
+      location = modId + location;
+    } else if (!location.contains(":")) {
       location = modId + ':' + location;
     }
     return constructor.apply(location);

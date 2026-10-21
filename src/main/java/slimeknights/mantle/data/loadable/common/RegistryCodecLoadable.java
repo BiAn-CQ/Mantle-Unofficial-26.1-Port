@@ -12,6 +12,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.RegistryOps;
 import slimeknights.mantle.data.loadable.Loadable;
+import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.util.typed.TypedMap;
 
 /** Loadable backed by native registry-aware JSON and network codecs. */
@@ -21,12 +22,18 @@ public record RegistryCodecLoadable<T>(Codec<T> codec, StreamCodec<RegistryFrien
 
   @Override
   public T convert(JsonElement element, String key, TypedMap context) {
-    return codec.parse(JSON_OPS, element).getOrThrow(message -> new JsonParseException("Invalid " + key + ": " + message));
+    return codec.parse(ContextKey.withRegistryContext(JSON_OPS, ContextKey.currentContext(context)), element)
+      .getOrThrow(message -> new JsonParseException("Invalid " + key + ": " + message));
   }
 
   @Override
   public JsonElement serialize(T object) {
-    return codec.encodeStart(JSON_OPS, object).getOrThrow(JsonParseException::new);
+    return serialize(object, ContextKey.currentContext());
+  }
+
+  @Override
+  public JsonElement serialize(T object, TypedMap context) {
+    return codec.encodeStart(ContextKey.withRegistryContext(JSON_OPS, ContextKey.currentContext(context)), object).getOrThrow(JsonParseException::new);
   }
 
   @Override

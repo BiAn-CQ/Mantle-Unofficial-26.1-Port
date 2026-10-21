@@ -56,7 +56,7 @@ public record EnumLoadable<E extends Enum<E>>(Class<E> enumClass, E[] allowedVal
   }
 
   @Override
-  public Loadable<Set<E>> set(int minSize) {
+  public slimeknights.mantle.data.loadable.array.ArrayLoadable<Set<E>> set(int minSize) {
     return new EnumSetLoadable<>(this, minSize);
   }
 

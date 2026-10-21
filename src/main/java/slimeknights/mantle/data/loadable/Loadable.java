@@ -13,6 +13,7 @@ import org.jetbrains.annotations.Contract;
 import slimeknights.mantle.data.loadable.array.ArrayLoadable;
 import slimeknights.mantle.data.loadable.array.ObjectArrayLoadable;
 import slimeknights.mantle.data.loadable.field.DefaultingField;
+import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.field.LoadableField;
 import slimeknights.mantle.data.loadable.field.NullableField;
 import slimeknights.mantle.data.loadable.field.RequiredField;
@@ -34,7 +35,7 @@ import java.util.function.IntFunction;
 
 /** Interface for a generic loadable object */
 @SuppressWarnings("unused")  // API
-public interface Loadable<T> extends JsonDeserializer<T>, JsonSerializer<T>, Streamable<T> {
+public interface Loadable<T> extends JsonDeserializer<T>, JsonSerializer<T>, Streamable<T>, SimpleJsonDeserializer<T>, SimpleJsonSerializer<T> {
   /**
    * Deserializes the object from the passed JSON element
    * @param element  Element of an unknown type to parse
@@ -57,7 +58,14 @@ public interface Loadable<T> extends JsonDeserializer<T>, JsonSerializer<T>, Str
    * @return  Serialized object
    * @throws RuntimeException  If unable to serialize the object
    */
-  JsonElement serialize(T object);
+  default JsonElement serialize(T object) {
+    return serialize(object, TypedMap.EMPTY);
+  }
+
+  /** Writes JSON using the same registry and condition context as deserialization. */
+  default JsonElement serialize(T object, TypedMap context) {
+    return serialize(object);
+  }
 
 
   /* GSON methods, lets us easily use loadables with GSON adapters. */
@@ -66,14 +74,14 @@ public interface Loadable<T> extends JsonDeserializer<T>, JsonSerializer<T>, Str
   @OverrideOnly
   @Override
   default T deserialize(JsonElement json, Type type, JsonDeserializationContext context) {
-    return convert(json, type.getTypeName(), TypedMap.EMPTY);
+    return convert(json, type.getTypeName(), ContextKey.currentContext());
   }
 
   /** This method exists just to implement {@link JsonSerializer}, use {@link #serialize(Object)}. */
   @OverrideOnly
   @Override
   default JsonElement serialize(T object, Type type, JsonSerializationContext context) {
-    return serialize(object);
+    return serialize(object, ContextKey.currentContext());
   }
 
 
@@ -176,22 +184,22 @@ public interface Loadable<T> extends JsonDeserializer<T>, JsonSerializer<T>, Str
 
   // TODO 1.21: switch return type to ArrayLoadable
   /** Makes a list of this loadable */
-  default Loadable<List<T>> list(int minSize) {
+  default slimeknights.mantle.data.loadable.array.ArrayLoadable<List<T>> list(int minSize) {
     return new ListLoadable<>(this, minSize);
   }
 
   /** Makes a list of this loadable */
-  default Loadable<List<T>> list() {
+  default slimeknights.mantle.data.loadable.array.ArrayLoadable<List<T>> list() {
     return list(1);
   }
 
   /** Makes a set of this loadable */
-  default Loadable<Set<T>> set(int minSize) {
+  default slimeknights.mantle.data.loadable.array.ArrayLoadable<Set<T>> set(int minSize) {
     return new SetLoadable<>(this, minSize);
   }
 
   /** Makes a set of this loadable */
-  default Loadable<Set<T>> set() {
+  default slimeknights.mantle.data.loadable.array.ArrayLoadable<Set<T>> set() {
     return set(1);
   }
 

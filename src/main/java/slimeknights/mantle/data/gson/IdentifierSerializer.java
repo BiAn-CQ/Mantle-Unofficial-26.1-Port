@@ -32,6 +32,9 @@ public final class IdentifierSerializer implements JsonDeserializer<Identifier>,
   @Override
   public Identifier deserialize(JsonElement element, Type type, JsonDeserializationContext context) throws JsonParseException {
     String location = GsonHelper.convertToString(element, "location");
+    if (location.startsWith(":")) {
+      return Identifier.fromNamespaceAndPath(modId, location.substring(1));
+    }
     return Identifier.parse(location.contains(":") ? location : modId + ':' + location);
   }
 }

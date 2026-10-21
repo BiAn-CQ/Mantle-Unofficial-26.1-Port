@@ -34,9 +34,13 @@ public record DefaultingField<T,P>(Loadable<T> loadable, String key, T defaultVa
 
   @Override
   public void serialize(P parent, JsonObject json) {
+    serialize(parent, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(P parent, JsonObject json, TypedMap context) {
     T object = getter.apply(parent);
     if (skipSerialize == null || !skipSerialize.test(defaultValue, object)) {
-      json.add(key, loadable.serialize(object));
+      json.add(key, loadable.serialize(object, context));
     }
   }
 }

@@ -56,6 +56,10 @@ public record MergingRegistryField<T,P>(RecordLoadable<T> loadable, String typeK
 
   @Override
   public void serialize(P parent, JsonObject json) {
-    serializeInto(json, typeKey, loadable.serialize(getter.apply(parent)));
+    serialize(parent, json, TypedMap.EMPTY);
+  }
+
+  public void serialize(P parent, JsonObject json, TypedMap context) {
+    serializeInto(json, typeKey, loadable.serialize(getter.apply(parent), context));
   }
 }

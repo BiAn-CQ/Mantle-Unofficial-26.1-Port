@@ -1,5 +1,6 @@
 package slimeknights.mantle.client.book.data.content;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import net.minecraft.resources.Identifier;
 import slimeknights.mantle.Mantle;
@@ -19,7 +20,9 @@ public class ContentTextLeftImage extends PageContent {
   @Getter
   public String title = null;
   public ImageData image;
+  @SerializedName(value = "right_text", alternate = "text1")
   public TextData[] text1;
+  @SerializedName(value = "bottom_text", alternate = "text2")
   public TextData[] text2;
 
   @Override

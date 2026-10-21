@@ -1,12 +1,19 @@
 package slimeknights.mantle.data.loadable.field;
 
+import com.google.gson.JsonElement;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.RegistryOps;
 import net.neoforged.neoforge.common.conditions.ICondition.IContext;
+import net.neoforged.neoforge.common.conditions.ConditionalOps;
 import slimeknights.mantle.data.loadable.ErrorFactory;
+import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.util.typed.TypedMap;
 import slimeknights.mantle.util.typed.TypedMap.Key;
+import slimeknights.mantle.util.typed.TypedMapBuilder;
 
 import javax.annotation.Nullable;
 import java.util.function.BiFunction;
@@ -36,6 +43,74 @@ public class ContextKey<T> implements Key<T> {
 
   public String getName() {
     return name;
+  }
+
+  /** Creates context for data generation or a world registry lookup. */
+  public static TypedMapBuilder lookupContext(@Nullable HolderLookup.Provider lookup) {
+    return TypedMapBuilder.builder().put(REGISTRY_LOOKUP,
+      new RegistryOps.HolderLookupAdapter(lookup == null ? RegistryAccess.EMPTY : lookup));
+  }
+
+  /** Preserves the registry and condition information carried by a native codec. */
+  public static <O> TypedMapBuilder opsContext(DynamicOps<O> ops) {
+    TypedMapBuilder builder = TypedMapBuilder.builder();
+    if (ops instanceof RegistryOps<?> registryOps) {
+      builder.put(REGISTRY_LOOKUP, registryOps.lookupProvider);
+    }
+    if (ops instanceof ConditionalOps<?>) {
+      ConditionalOps.retrieveContext().codec().parse(ops, ops.emptyMap()).result()
+        .ifPresent(condition -> builder.put(CONDITION_CONTEXT, condition));
+    }
+    return builder;
+  }
+
+  /** Context supplied by the native codec around an older Gson adapter. */
+  public static TypedMap currentContext() {
+    DynamicOps<?> ops = IngredientLoadable.activeOps();
+    return ops == null ? TypedMap.EMPTY : opsContext(ops).build();
+  }
+
+  /** Includes a legacy Gson codec's context while keeping explicit keys authoritative. */
+  public static TypedMap currentContext(TypedMap context) {
+    TypedMap current = currentContext();
+    return current.isEmpty() ? context : TypedMapBuilder.builder().putAll(current).putAll(context).build();
+  }
+
+  /** Applies explicit context without replacing the caller's native operations when absent. */
+  public static <O> DynamicOps<O> withRegistryContext(DynamicOps<O> ops, TypedMap context) {
+    RegistryOps.RegistryInfoLookup lookup = context.get(REGISTRY_LOOKUP);
+    if (lookup == null) {
+      RegistryAccess access = context.get(REGISTRY_ACCESS);
+      if (access != null) {
+        lookup = new RegistryOps.HolderLookupAdapter(access);
+      }
+    }
+    RegistryOps<O> registryOps = lookup != null ? RegistryOps.create(ops, lookup)
+      : ops instanceof RegistryOps<O> existing ? existing : null;
+    IContext conditions = context.get(CONDITION_CONTEXT);
+    if (conditions != null) {
+      if (registryOps == null) {
+        registryOps = RegistryOps.create(ops, RegistryAccess.EMPTY);
+      }
+      return new ConditionalOps<>(registryOps, conditions);
+    }
+    return registryOps == null ? ops : registryOps;
+  }
+
+  public static DynamicOps<JsonElement> optionalRegistryOps(TypedMap context) {
+    return withRegistryContext(JsonOps.INSTANCE, currentContext(context));
+  }
+
+  public static RegistryOps<JsonElement> createRegistryOps(TypedMap context, ErrorFactory error) {
+    TypedMap resolved = currentContext(context);
+    if (resolved.get(REGISTRY_LOOKUP) == null && resolved.get(REGISTRY_ACCESS) == null) {
+      throw error.create("Missing registry lookup in loadable context");
+    }
+    DynamicOps<JsonElement> ops = withRegistryContext(JsonOps.INSTANCE, resolved);
+    if (ops instanceof RegistryOps<JsonElement> registryOps) {
+      return registryOps;
+    }
+    throw error.create("Missing registry lookup in loadable context");
   }
 
 

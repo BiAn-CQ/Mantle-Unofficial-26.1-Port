@@ -89,7 +89,13 @@ public class MantleBlockEntity extends BlockEntity {
 
   /** Provider-aware compatibility hook for older Mantle/Tinkers block entities. */
   protected void saveSynced(CompoundTag nbt, HolderLookup.Provider registries) {
-    saveSynced(nbt);
+    HolderLookup.Provider previous = this.registries;
+    this.registries = registries;
+    try {
+      saveSynced(nbt);
+    } finally {
+      this.registries = previous;
+    }
   }
 
   /** Current 26.1 hook retained for block entities that do not need registry context. */

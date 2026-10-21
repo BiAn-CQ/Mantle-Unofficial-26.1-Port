@@ -36,6 +36,10 @@ public class MantleTags {
     public static final TagKey<Block> ATTACHED_GAUGES = tag("gauges/attached");
     /** Blocks in this tag will show the fluid contained. Must have a block entity with a fluid handler capability. */
     public static final TagKey<Block> GAUGE_TANKS = tag("gauges/tank");
+    /** Blocks that must not expose tank information through a gauge. */
+    public static final TagKey<Block> GAUGE_BLACKLIST = tag("gauge_blacklist");
+    /** Blocks whose gauges only display their fluid name. */
+    public static final TagKey<Block> HIDES_GAUGE_AMOUNT = tag("hides_gauge_amount");
 
     /** Adds a mantle domain tag */
     private static TagKey<Block> tag(String name) {

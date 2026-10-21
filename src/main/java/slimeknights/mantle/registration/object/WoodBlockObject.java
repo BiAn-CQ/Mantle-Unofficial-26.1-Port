@@ -88,10 +88,10 @@ public class WoodBlockObject extends FenceBuildingBlockObject {
                          Block sign, Block wallSign, Block hangingSign, Block wallHangingSign) {
     super(planks, fence);
     this.woodType = woodType;
-    this.log = getHolder(BuiltInRegistries.BLOCK, log);
-    this.strippedLog = getHolder(BuiltInRegistries.BLOCK, strippedLog);
-    this.wood = getHolder(BuiltInRegistries.BLOCK, wood);
-    this.strippedWood = getHolder(BuiltInRegistries.BLOCK, strippedWood);
+    this.log = slimeknights.mantle.util.RegistryHelper.getHolder(BuiltInRegistries.BLOCK, log);
+    this.strippedLog = slimeknights.mantle.util.RegistryHelper.getHolder(BuiltInRegistries.BLOCK, strippedLog);
+    this.wood = slimeknights.mantle.util.RegistryHelper.getHolder(BuiltInRegistries.BLOCK, wood);
+    this.strippedWood = slimeknights.mantle.util.RegistryHelper.getHolder(BuiltInRegistries.BLOCK, strippedWood);
     this.fenceGate = getCastedHolder(BuiltInRegistries.BLOCK, fenceGate);
     this.door = getCastedHolder(BuiltInRegistries.BLOCK, door);
     this.trapdoor = getCastedHolder(BuiltInRegistries.BLOCK, trapdoor);

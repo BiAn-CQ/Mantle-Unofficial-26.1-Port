@@ -11,6 +11,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.material.Fluid;
 import slimeknights.mantle.data.GenericDataProvider;
+import slimeknights.mantle.data.predicate.IJsonPredicate;
+import slimeknights.mantle.data.predicate.fluid.FluidPredicate;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -39,7 +41,7 @@ public abstract class AbstractFluidTooltipProvider extends GenericDataProvider {
   public final CompletableFuture<?> run(CachedOutput cache) {
     addFluids();
     return allOf(Stream.concat(
-      builders.entrySet().stream().map(entry -> saveJson(cache, entry.getKey(), entry.getValue().build())),
+      builders.entrySet().stream().map(entry -> saveJson(cache, entry.getKey(), FluidUnitList.LOADABLE.serialize(entry.getValue().build()))),
       redirects.entrySet().stream().map(entry -> {
       JsonObject json = new JsonObject();
       json.addProperty("redirect", entry.getValue().toString());
@@ -101,11 +103,22 @@ public abstract class AbstractFluidTooltipProvider extends GenericDataProvider {
 
   /** Builder for a unit list */
   @SuppressWarnings("unused")
-  @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
   protected class FluidUnitListBuilder {
-    @Nullable
-    private final TagKey<Fluid> tag;
+    private IJsonPredicate<Fluid> fluid;
     private final List<FluidUnit> units = new ArrayList<>();
+
+    private FluidUnitListBuilder(@Nullable TagKey<Fluid> tag) {
+      this.fluid = tag == null ? FluidPredicate.NONE : FluidPredicate.tag(tag);
+    }
+
+    public FluidUnitListBuilder fluid(IJsonPredicate<Fluid> fluid) {
+      this.fluid = fluid;
+      return this;
+    }
+
+    public FluidUnitListBuilder tag(TagKey<Fluid> tag) {
+      return fluid(FluidPredicate.tag(tag));
+    }
 
     /** Adds a unit with a full translation key */
     public FluidUnitListBuilder addUnitRaw(String key, int amount) {
@@ -125,7 +138,7 @@ public abstract class AbstractFluidTooltipProvider extends GenericDataProvider {
 
     /** Builds the final instance */
     private FluidUnitList build() {
-      return new FluidUnitList(tag, List.copyOf(units));
+      return new FluidUnitList(fluid, List.copyOf(units));
     }
   }
 }

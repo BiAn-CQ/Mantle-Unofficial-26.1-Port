@@ -11,6 +11,7 @@ import java.util.Objects;
 /** Builder for a typed map, ensures key value pairs are consistent */
 @SuppressWarnings("unused")  // API
 public class TypedMapBuilder {
+  public static final java.util.function.Consumer<TypedMapBuilder> EMPTY_CONSUMER = builder -> {};
   private final Map<Key<?>,Object> builder = new HashMap<>();
 
   public TypedMapBuilder() {}

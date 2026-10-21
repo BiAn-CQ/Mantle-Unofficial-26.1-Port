@@ -11,7 +11,7 @@ import slimeknights.mantle.recipe.container.IRecipeContainer;
 /**
  * Compatibility bridge for recipes migrating from the pre-26.1 Mantle recipe API.
  */
-public interface ICommonRecipe<C extends IRecipeContainer> extends Recipe<C> {
+public interface ICommonRecipe<C extends net.minecraft.world.item.crafting.RecipeInput> extends Recipe<C> {
   @Override
   default ItemStack assemble(C input) {
     return getResultItem(RegistryAccess.EMPTY).copy();

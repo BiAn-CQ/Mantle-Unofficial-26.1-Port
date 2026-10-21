@@ -19,6 +19,8 @@ public class FillFluidWithNBTTransfer extends FillFluidContainerTransfer {
     super(input, filled, fluid);
   }
 
+  @Override public slimeknights.mantle.data.loadable.record.RecordLoadable<? extends IFluidContainerTransfer> getLoader() { return TransferRegistry.LEGACY; }
+
   @Override
   protected ItemStack getFilled(FluidStack drained) {
     ItemStack filled = super.getFilled(drained);

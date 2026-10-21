@@ -107,7 +107,7 @@ public interface BaseRegistryLoadable<T> extends IdentifierLoadable<T> {
   }
 
   @Override
-  default Loadable<Set<T>> set(int minSize) {
+  default slimeknights.mantle.data.loadable.array.ArrayLoadable<Set<T>> set(int minSize) {
     return new SetLoadable.Ordered<>(this, minSize);
   }
 }

@@ -37,6 +37,10 @@ public abstract class GenericDataProvider implements DataProvider {
   protected final PackOutput.PathProvider pathProvider;
   private final Gson gson;
 
+  public GenericDataProvider(PackOutput.PathProvider pathProvider) {
+    this(pathProvider, JsonHelper.DEFAULT_GSON);
+  }
+
   public GenericDataProvider(PackOutput output, Target type, String folder, Gson gson) {
     this(output.createPathProvider(type, folder), gson);
   }
@@ -85,6 +89,14 @@ public abstract class GenericDataProvider implements DataProvider {
    */
   protected <T> CompletableFuture<?> saveJson(CachedOutput output, Identifier location, Codec<T> codec, T object) {
     return saveJson(output, location, codec.encodeStart(JsonOps.INSTANCE, object).getOrThrow());
+  }
+
+  protected CompletableFuture<?> saveJson(CachedOutput output, Identifier location, JsonElement element, @Nullable Comparator<String> comparator) {
+    return saveStable(output, element, pathProvider.json(location), comparator);
+  }
+
+  protected CompletableFuture<?> saveJson(CachedOutput output, Identifier location, JsonElement element) {
+    return saveJson(output, location, element, DataProvider.KEY_COMPARATOR);
   }
 
   /** Combines a stream of completable futures into a single completable future */

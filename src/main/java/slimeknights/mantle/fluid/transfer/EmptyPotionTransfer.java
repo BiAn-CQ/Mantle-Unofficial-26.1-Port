@@ -18,9 +18,11 @@ import slimeknights.mantle.datagen.MantleTags;
 import slimeknights.mantle.recipe.helper.FluidOutput;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.mantle.recipe.helper.TagPreference;
+import slimeknights.mantle.util.DataComponentHelper;
 
 /** Fluid transfer info that empties a fluid from a potion item, but empties water if it's the water potion */
 public class EmptyPotionTransfer extends EmptyFluidContainerTransfer {
+  private static final PotionContents WATER = new PotionContents(Potions.WATER);
   public static final Identifier ID = Mantle.getResource("empty_potion");
   /** Unique loader instance */
   public static final RecordLoadable<EmptyPotionTransfer> DESERIALIZER = RecordLoadable.create(
@@ -37,26 +39,25 @@ public class EmptyPotionTransfer extends EmptyFluidContainerTransfer {
   public boolean matches(ItemStack stack, FluidStack fluid) {
     // to match, must either have water in the stack, or a potion fluid
     return super.matches(stack, fluid)
-      && (TagPreference.getPreference(MantleTags.Fluids.POTION).isPresent() || stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).potion().filter(Potions.WATER::equals).isPresent());
+      && (TagPreference.getPreference(MantleTags.Fluids.POTION).isPresent() || stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).equals(WATER));
   }
 
   @Override
   protected FluidStack getFluid(ItemStack stack) {
     // water just returns water
-    if (stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).potion().filter(Potions.WATER::equals).isPresent()) {
+    if (stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).equals(WATER)) {
       return fluid.copy();
     }
     // if it's not water, we need a potion fluid to return anything
     return TagPreference.getPreference(MantleTags.Fluids.POTION)
       .map(value -> {
         FluidStack result = new FluidStack(value, fluid.getAmount());
-        if (!stack.isComponentsPatchEmpty()) {
-          result.applyComponents(stack.getComponentsPatch());
-        }
-        return result;
+        return DataComponentHelper.copy(result, stack, DataComponents.POTION_CONTENTS);
       })
       .orElse(FluidStack.EMPTY);
   }
+
+  @Override public RecordLoadable<? extends IFluidContainerTransfer> getLoader() { return DESERIALIZER; }
 
   @Override
   public JsonObject serialize(JsonSerializationContext context) {

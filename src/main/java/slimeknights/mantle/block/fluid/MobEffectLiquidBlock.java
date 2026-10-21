@@ -1,7 +1,13 @@
 package slimeknights.mantle.block.fluid;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.MapColor;
 import slimeknights.mantle.registration.deferred.FluidDeferredRegister;
@@ -9,12 +15,19 @@ import slimeknights.mantle.registration.deferred.FluidDeferredRegister;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/** Liquid block setting the entity on fire */
+/** Liquid block applying a configured effect to immersed living entities. */
 public class MobEffectLiquidBlock extends LiquidBlock {
   private final Supplier<MobEffectInstance> effect;
   public MobEffectLiquidBlock(Supplier<? extends FlowingFluid> supplier, Properties properties, Supplier<MobEffectInstance> effect) {
     super(supplier.get(), properties);
     this.effect = effect;
+  }
+
+  @Override
+  protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier effectApplier, boolean isPrecise) {
+    if (entity instanceof LivingEntity living && entity.getFluidTypeHeight(fluid.getFluidType()) > 0) {
+      living.addEffect(effect.get());
+    }
   }
 
   /** Creates a new block supplier */

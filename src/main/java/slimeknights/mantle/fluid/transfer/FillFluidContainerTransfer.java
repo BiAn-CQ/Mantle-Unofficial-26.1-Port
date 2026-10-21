@@ -32,9 +32,20 @@ import java.util.function.Consumer;
 public class FillFluidContainerTransfer implements IFluidContainerTransfer {
   public static final Identifier ID = Mantle.getResource("fill_item");
 
-  private final Ingredient input;
-  private final ItemOutput result;
-  private final FluidIngredient fluid;
+  public static final slimeknights.mantle.data.loadable.record.RecordLoadable<FillFluidContainerTransfer> LOADER = slimeknights.mantle.data.loadable.record.RecordLoadable.create(
+    IngredientLoadable.DISALLOW_EMPTY.requiredField("input", value -> value.input),
+    ItemOutput.Loadable.OPTIONAL_ITEM.emptyField("result", value -> value.result),
+    slimeknights.mantle.recipe.ingredient.FluidIngredient.LOADABLE.requiredField("fluid", value -> value.fluid),
+    FillFluidContainerTransfer::new);
+  @Override public slimeknights.mantle.data.loadable.record.RecordLoadable<? extends IFluidContainerTransfer> getLoader() { return LOADER; }
+
+  protected final Ingredient input;
+  protected final ItemOutput result;
+  protected final FluidIngredient fluid;
+
+  public FillFluidContainerTransfer(Ingredient input, ItemOutput result, net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient fluid) {
+    this(input, result, FluidIngredient.of(fluid));
+  }
 
   @Override
   public void addRepresentativeItems(Consumer<Item> consumer) {
@@ -57,7 +68,7 @@ public class FillFluidContainerTransfer implements IFluidContainerTransfer {
     if (!direction.canFill()) {
       return null;
     }
-    int amount = this.fluid.getAmount(fluid.getFluid());
+    int amount = this.fluid.getAmount(fluid);
     FluidStack toDrain = fluid.copyWithAmount(amount);
     try (Transaction transaction = Transaction.openRoot()) {
       int extracted = handler.extract(FluidResource.of(toDrain), amount, transaction);
@@ -73,7 +84,7 @@ public class FillFluidContainerTransfer implements IFluidContainerTransfer {
   public JsonObject serialize(JsonSerializationContext context) {
     JsonObject json = new JsonObject();
     json.addProperty("type", ID.toString());
-    json.add("input", Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, input).getOrThrow());
+    json.add("input", IngredientLoadable.DISALLOW_EMPTY.serialize(input, slimeknights.mantle.data.loadable.field.ContextKey.currentContext()));
     if (!result.isEmpty()) {
       json.add("result", result.serialize(false));
     }

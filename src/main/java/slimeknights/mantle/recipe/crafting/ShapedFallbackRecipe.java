@@ -24,7 +24,7 @@ import slimeknights.mantle.recipe.MantleRecipes;
 import java.util.List;
 
 @SuppressWarnings("WeakerAccess")
-public class ShapedFallbackRecipe extends ShapedRecipe {
+public class ShapedFallbackRecipe extends ShapedRecipe implements slimeknights.mantle.recipe.crafting.fallback.FallbackCraftingRecipe {
   public static final MapCodec<ShapedFallbackRecipe> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
     Recipe.CommonInfo.MAP_CODEC.forGetter(recipe -> recipe.commonInfo),
     CraftingRecipe.CraftingBookInfo.MAP_CODEC.forGetter(recipe -> recipe.bookInfo),
@@ -58,6 +58,10 @@ public class ShapedFallbackRecipe extends ShapedRecipe {
     this.alternatives = List.copyOf(alternatives);
   }
 
+  @Override public List<CraftingRecipe> getAlternatives(Level level) {
+    return slimeknights.mantle.recipe.crafting.fallback.FallbackCraftingRecipe.computeAlternatives(level, alternatives);
+  }
+
   @Override
   public boolean matches(CraftingInput input, Level level) {
     // if this recipe does not match, fail it
@@ -77,7 +81,7 @@ public class ShapedFallbackRecipe extends ShapedRecipe {
         .map(manager::byKey)
         .flatMap(java.util.Optional::stream)
         .map(holder -> holder.value())
-        .filter(recipe -> recipe.getClass() == ShapedRecipe.class || recipe.getClass() == ShapelessRecipe.class)
+        .filter(recipe -> recipe instanceof CraftingRecipe)
         .map(recipe -> (CraftingRecipe) recipe)
         .toList();
     }

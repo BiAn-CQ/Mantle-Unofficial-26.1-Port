@@ -20,6 +20,9 @@ import slimeknights.mantle.fluid.transfer.AbstractFluidContainerTransferProvider
 import slimeknights.mantle.fluid.transfer.EmptyPotionTransfer;
 import slimeknights.mantle.fluid.transfer.FillFluidContainerTransfer;
 import slimeknights.mantle.fluid.transfer.FillFluidWithNBTTransfer;
+import slimeknights.mantle.fluid.transfer.FillFluidCopyDataTransfer;
+import net.minecraft.core.component.DataComponents;
+import java.util.List;
 import slimeknights.mantle.recipe.condition.TagFilledCondition;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.mantle.recipe.ingredient.FluidIngredient;
@@ -31,6 +34,10 @@ import javax.annotation.Nullable;
 public class MantleFluidTransferProvider extends AbstractFluidContainerTransferProvider {
   public MantleFluidTransferProvider(PackOutput packOutput) {
     super(packOutput, Mantle.modId);
+  }
+
+  public MantleFluidTransferProvider(PackOutput packOutput, java.util.concurrent.CompletableFuture<net.minecraft.core.HolderLookup.Provider> registries) {
+    super(packOutput, Mantle.modId, registries);
   }
 
   @Override
@@ -84,16 +91,17 @@ public class MantleFluidTransferProvider extends AbstractFluidContainerTransferP
     }
 
     // filling potions is as simple as a NBT copy, though this requires a potion fluid and possibly a container
-    addTransfer(prefix + "fill_potion", new FillFluidWithNBTTransfer(
+    addTransfer(prefix + "fill_potion", new FillFluidCopyDataTransfer(
       container,
       ItemOutput.fromItem(filled),
-      FluidIngredient.of(MantleTags.Fluids.POTION, MantleValues.BOTTLE)),
+      FluidIngredient.of(MantleTags.Fluids.POTION, MantleValues.BOTTLE), List.of(DataComponents.POTION_CONTENTS)),
       potionConditions);
     // water bottles are 1/3 of a bucket, to prevent water dupes we round up on fill and down on empty, hence fill being 500mb
     // we can always fill water bottles, not always fill splash and lingering
     addTransfer(prefix + "fill_water", new FillFluidContainerTransfer(
       container,
-      ItemOutput.fromStack(PotionContents.createItemStack(filled.asItem(), Potions.WATER)),
+      ItemOutput.fromTemplate(new net.minecraft.world.item.ItemStackTemplate(filled.asItem(), 1,
+        net.minecraft.core.component.DataComponentPatch.builder().set(DataComponents.POTION_CONTENTS, new PotionContents(Potions.WATER)).build())),
       FluidIngredient.of(MantleTags.Fluids.WATER, MantleValues.BOTTLE * 2)),
       waterConditions);
   }

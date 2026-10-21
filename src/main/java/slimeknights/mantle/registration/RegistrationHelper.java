@@ -54,4 +54,9 @@ public class RegistrationHelper {
   public static <T extends ArgumentType<?>> Class<T> genericArgumentType(Class<? super T> type) {
     return (Class<T>) type;
   }
+
+  public static void registerSignBlock(Supplier<? extends net.minecraft.world.level.block.Block> sign) { slimeknights.mantle.block.entity.MantleSignBlockEntity.registerSignBlock(sign); }
+  public static void registerHangingSignBlock(Supplier<? extends net.minecraft.world.level.block.Block> sign) { slimeknights.mantle.block.entity.MantleHangingSignBlockEntity.registerSignBlock(sign); }
+  public static net.minecraft.world.level.block.Block[] buildSignBlocks() { return slimeknights.mantle.block.entity.MantleSignBlockEntity.buildSignBlocks().toArray(net.minecraft.world.level.block.Block[]::new); }
+  public static net.minecraft.world.level.block.Block[] buildHangingSignBlocks() { return slimeknights.mantle.block.entity.MantleHangingSignBlockEntity.buildSignBlocks().toArray(net.minecraft.world.level.block.Block[]::new); }
 }

@@ -50,13 +50,14 @@ public class OffhandCooldownTracker {
   }
 
   /** Gets the tracker for one logical player identity. */
-  static OffhandCooldownTracker getOrCreate(Player player) {
+  public static OffhandCooldownTracker getOrCreate(Player player) {
     return TRACKERS.computeIfAbsent(player, OffhandCooldownTracker::new);
   }
 
   /** Removes a player tracker when its logical entity leaves a level. */
   public static void clear(Player player) {
     TRACKERS.remove(player);
+    player.removeData(slimeknights.mantle.registration.MantleData.OFFHAND_COOLDOWN);
   }
 
   /** Player receiving cooldowns */

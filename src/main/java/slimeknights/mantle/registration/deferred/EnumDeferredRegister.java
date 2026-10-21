@@ -20,25 +20,9 @@ public class EnumDeferredRegister<T> extends DeferredRegisterWrapper<T> {
     return register.register(name, value);
   }
 
-  /**
-   * Registers an object with multiple variants, prefixing the name with the value name
-   * @param values   Enum values to use for this item
-   * @param name     Name of the object
-   * @param mapper   Function to get an object for the given enum value
-   * @return  EnumObject mapping between different item types
-   */
-  public <E extends Enum<E> & StringRepresentable, I extends T> EnumObject<E,I> registerEnum(E[] values, String name, Function<E,? extends I> mapper) {
-    return registerEnum(values, name, (fullName, type) -> register(fullName, () -> mapper.apply(type)));
+  public <I extends T> DeferredHolder<T,I> register(String name, Function<net.minecraft.resources.Identifier,? extends I> factory) {
+    return register.register(name, () -> factory.apply(resource(name)));
   }
-
-  /**
-   * Registers an object with multiple variants, suffixing the name with the value name
-   * @param values   Enum values to use for this item
-   * @param name     Name of the object
-   * @param mapper   Function to get an object for the given enum value
-   * @return  EnumObject mapping between different item types
-   */
-  public <E extends Enum<E> & StringRepresentable, I extends T> EnumObject<E,I> registerEnum(String name, E[] values, Function<E,? extends I> mapper) {
-    return registerEnum(name, values, (fullName, type) -> register(fullName, () -> mapper.apply(type)));
-  }
+  public static Function<Enum<?>,String> prefix(String prefix) { return value -> prefix + '_' + getName(value); }
+  public static Function<Enum<?>,String> suffix(String suffix) { return value -> getName(value) + '_' + suffix; }
 }
