@@ -19,10 +19,7 @@ import slimeknights.mantle.Mantle;
 public final class MantleRenderTypes {
   private MantleRenderTypes() {}
 
-  /**
-   * Render type used for the fluid renderer.
-   * TODO 1.21: can we replace this with {@link RenderType#ENTITY_TRANSLUCENT_CULL}? Would require including normals in our vertex format.
-   */
+  /** Render type used for fluid cuboids with block-atlas textures and a lightmap. */
   public static final RenderType FLUID = RenderType.create(
     Mantle.modId + ":fluid",
     blockAtlasSetup(RenderPipelines.TRANSLUCENT_BLOCK, true, false));

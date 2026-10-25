@@ -34,8 +34,6 @@ public final class LoadableRecipeSerializer {
 
   /** Context key to use if you want the recipe serializer passed into your recipe */
   public static final ContextKey<RecipeSerializer<?>> SERIALIZER = new ContextKey<>("serializer");
-  /** Context key to use if you want a type aware serializer in the recipe, requires {@link #of(RecordLoadable, Supplier)} for your serializer. */
-  public static final ContextKey<TypeAwareRecipeSerializer<?>> TYPED_SERIALIZER = new ContextKey<>("typed_serializer");
   /** Context key to use if you want the recipe type passed into your recipe, requires {@link #of(RecordLoadable, Supplier)} for your serializer. */
   public static final ContextKey<RecipeType<?>> TYPE = new ContextKey<>("type");
   /** Field for a group key in a recipe (common requirement) */
@@ -63,7 +61,6 @@ public final class LoadableRecipeSerializer {
   private static <T extends Recipe<?>> RecipeSerializer<T> create(
     RecordLoadable<T> loadable, Supplier<? extends RecipeType<?>> type, String replacement) {
     AtomicReference<RecipeSerializer<T>> serializerReference = new AtomicReference<>();
-    AtomicReference<TypeAwareRecipeSerializer<T>> typeAwareReference = new AtomicReference<>();
 
     JsonCodec<T> codec = new JsonCodec<>() {
       @Override
@@ -88,7 +85,7 @@ public final class LoadableRecipeSerializer {
       }
 
       private TypedMap context(DynamicOps<?> ops) {
-        return buildContext(serializerReference.get(), typeAwareReference.get(), type, ops);
+        return buildContext(serializerReference.get(), type, ops);
       }
 
       @Override
@@ -99,33 +96,13 @@ public final class LoadableRecipeSerializer {
 
     MapCodec<T> mapCodec = MapCodec.assumeMapUnsafe(codec);
     StreamCodec<RegistryFriendlyByteBuf, T> streamCodec = StreamCodec.of(
-      (buffer, recipe) -> loadable.encode(buffer, recipe, buildContext(serializerReference.get(), typeAwareReference.get(), type, buffer.registryAccess())),
-      buffer -> loadable.decode(buffer, buildContext(serializerReference.get(), typeAwareReference.get(), type, buffer.registryAccess()))
+      (buffer, recipe) -> loadable.encode(buffer, recipe, buildContext(serializerReference.get(), type, buffer.registryAccess())),
+      buffer -> loadable.decode(buffer, buildContext(serializerReference.get(), type, buffer.registryAccess()))
     );
     RecipeSerializer<T> serializer = new RecipeSerializer<>(mapCodec, streamCodec);
     serializerReference.set(serializer);
-    TypeAwareRecipeSerializer<T> typeAware = null;
-    if (type != null) {
-      typeAware = new TypeAwareInfo<>(serializer, type);
-      typeAwareReference.set(typeAware);
-    }
-    SERIALIZER_INFO.put(serializer, new SerializerInfo<>(loadable, type, typeAware));
+    SERIALIZER_INFO.put(serializer, new SerializerInfo<>(loadable, type));
     return serializer;
-  }
-
-  /**
-   * Recovers the type-aware view associated with a serializer created by
-   * {@link #of(RecordLoadable, Supplier)}. NeoForge's deferred registry exposes
-   * the native serializer type, so data builders use this bridge when they also
-   * need the recipe type.
-   */
-  @SuppressWarnings("unchecked")
-  public static <T extends Recipe<?>> TypeAwareRecipeSerializer<T> typeAware(RecipeSerializer<? extends T> serializer) {
-    SerializerInfo<?> info = SERIALIZER_INFO.get(serializer);
-    if (info == null || info.typeAware() == null) {
-      throw new IllegalArgumentException("Recipe serializer is not backed by a type-aware Mantle loadable: " + serializer);
-    }
-    return (TypeAwareRecipeSerializer<T>) info.typeAware();
   }
 
   /** Builds a recipe directly from its loadable while retaining its data-pack ID. */
@@ -136,17 +113,15 @@ public final class LoadableRecipeSerializer {
       throw new IllegalArgumentException("Recipe serializer is not backed by a Mantle record loadable: " + serializer);
     }
     SerializerInfo<T> info = (SerializerInfo<T>) rawInfo;
-    TypedMap context = buildContext(serializer, info.typeAware(), info.type(), json, id);
+    TypedMap context = buildContext(serializer, info.type(), json, id);
     return info.loadable().deserialize(json, context);
   }
 
-  private static TypedMap buildContext(RecipeSerializer<?> serializer, TypeAwareRecipeSerializer<?> typeAware,
-                                       Supplier<? extends RecipeType<?>> type, Object opsOrAccess) {
-    return buildContext(serializer, typeAware, type, opsOrAccess, UNBOUND_RECIPE_ID);
+  private static TypedMap buildContext(RecipeSerializer<?> serializer, Supplier<? extends RecipeType<?>> type, Object opsOrAccess) {
+    return buildContext(serializer, type, opsOrAccess, UNBOUND_RECIPE_ID);
   }
 
-  private static TypedMap buildContext(RecipeSerializer<?> serializer, TypeAwareRecipeSerializer<?> typeAware,
-                                       Supplier<? extends RecipeType<?>> type, Object opsOrAccess, Identifier id) {
+  private static TypedMap buildContext(RecipeSerializer<?> serializer, Supplier<? extends RecipeType<?>> type, Object opsOrAccess, Identifier id) {
     TypedMapBuilder builder = TypedMapBuilder.builder()
       .put(ContextKey.ID, id)
       .put(ContextKey.DEBUG, "Recipe decoded through a 26.1 codec")
@@ -156,22 +131,12 @@ public final class LoadableRecipeSerializer {
     } else if (opsOrAccess instanceof net.minecraft.core.RegistryAccess registryAccess) {
       builder.put(ContextKey.REGISTRY_ACCESS, registryAccess);
     }
-    if (type != null && typeAware != null) {
-      builder.put(TYPE, type.get()).put(TYPED_SERIALIZER, typeAware);
+    if (type != null) {
+      builder.put(TYPE, type.get());
     }
     return builder.build();
   }
 
-  private record TypeAwareInfo<T extends Recipe<?>>(RecipeSerializer<T> serializer,
-                                                     Supplier<? extends RecipeType<?>> type)
-    implements TypeAwareRecipeSerializer<T> {
-    @Override
-    public RecipeType<?> getType() {
-      return type.get();
-    }
-  }
-
   private record SerializerInfo<T extends Recipe<?>>(RecordLoadable<T> loadable,
-                                                       Supplier<? extends RecipeType<?>> type,
-                                                       TypeAwareRecipeSerializer<T> typeAware) {}
+                                                       Supplier<? extends RecipeType<?>> type) {}
 }
