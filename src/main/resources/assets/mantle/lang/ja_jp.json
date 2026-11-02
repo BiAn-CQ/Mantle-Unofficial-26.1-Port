@@ -1,0 +1,23 @@
+{
+  "fluid.mantle.powder_snow": "粉雪",
+  "block.mantle.honey_fluid": "ハチミツ",
+  "fluid.mantle.honey": "ハチミツ",
+  "fluid.mantle.flowing_honey": "流れるハチミツ",
+  "item.mantle.honey_bucket": "ハチミツ入りバケツ",
+  "block.mantle.beetroot_soup_fluid": "ビートルートスープ",
+  "fluid.mantle.beetroot_soup": "ビートルートスープ",
+  "fluid.mantle.flowing_beetroot_soup": "流れるビートルートスープ",
+  "item.mantle.beetroot_soup_bucket": "ビートルートスープ入りバケツ",
+  "block.mantle.mushroom_stew_fluid": "キノコシチュー",
+  "fluid.mantle.mushroom_stew": "キノコシチュー",
+  "fluid.mantle.flowing_mushroom_stew": "流れるキノコシチュー",
+  "item.mantle.mushroom_stew_bucket": "キノコシチュー入りバケツ",
+  "block.mantle.rabbit_stew_fluid": "ウサギシチュー",
+  "fluid.mantle.rabbit_stew": "ウサギシチュー",
+  "fluid.mantle.flowing_rabbit_stew": "流れるウサギシチュー",
+  "item.mantle.rabbit_stew_bucket": "ウサギシチュー入りバケツ",
+  "fluid.mantle.potion": "ポーション",
+  "item.mantle.potion_bucket": "クラフト不可能なポーション入りバケツ",
+  "item.mantle.potion_bucket.effect.water": "水入りバケツ",
+  "item.mantle.potion_bucket.contents": "%s入りバケツ"
+}

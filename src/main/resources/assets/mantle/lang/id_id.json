@@ -1,0 +1,18 @@
+{
+  "block.mantle.honey_fluid": "Madu",
+  "fluid.mantle.honey": "Madu",
+  "fluid.mantle.flowing_honey": "Madu Mengalir",
+  "item.mantle.honey_bucket": "Ember Madu",
+  "block.mantle.beetroot_soup_fluid": "Sup Bit",
+  "fluid.mantle.beetroot_soup": "Sup Bit",
+  "fluid.mantle.flowing_beetroot_soup": "Sup Bit Mengalir",
+  "item.mantle.beetroot_soup_bucket": "Ember Sup Bit",
+  "block.mantle.mushroom_stew_fluid": "Rebusan Jamur",
+  "fluid.mantle.mushroom_stew": "Rebusan Jamur",
+  "fluid.mantle.flowing_mushroom_stew": "Rebusan Jamur Mengalir",
+  "item.mantle.mushroom_stew_bucket": "Ember Rebusan Jamur",
+  "block.mantle.rabbit_stew_fluid": "Rebusan Kelinci",
+  "fluid.mantle.rabbit_stew": "Rebusan Kelinci",
+  "fluid.mantle.flowing_rabbit_stew": "Rebusan Kelinci Mengalir",
+  "item.mantle.rabbit_stew_bucket": "Ember Rebusan Kelinci"
+}

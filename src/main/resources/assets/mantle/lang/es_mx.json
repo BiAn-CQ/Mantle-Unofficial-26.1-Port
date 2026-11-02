@@ -1,0 +1,23 @@
+{
+  "fluid.mantle.powder_snow": "Nieve en polvo",
+  "block.mantle.honey_fluid": "Miel",
+  "fluid.mantle.honey": "Miel",
+  "fluid.mantle.flowing_honey": "Miel fluyendo",
+  "item.mantle.honey_bucket": "Cubeta de miel",
+  "block.mantle.beetroot_soup_fluid": "Sopa de remolacha",
+  "fluid.mantle.beetroot_soup": "Sopa de remolacha",
+  "fluid.mantle.flowing_beetroot_soup": "Sopa de remolacha fluyendo",
+  "item.mantle.beetroot_soup_bucket": "Cubeta de sopa de remolacha",
+  "block.mantle.mushroom_stew_fluid": "Estofado de champiñones",
+  "fluid.mantle.mushroom_stew": "Estofado de champiñones",
+  "fluid.mantle.flowing_mushroom_stew": "Estofado de champiñones fluyendo",
+  "item.mantle.mushroom_stew_bucket": "Cubeta de estofado de champiñones",
+  "block.mantle.rabbit_stew_fluid": "Estofado de conejo",
+  "fluid.mantle.rabbit_stew": "Estofado de conejo",
+  "fluid.mantle.flowing_rabbit_stew": "Estofado de conejo fluyendo",
+  "item.mantle.rabbit_stew_bucket": "Cubeta de estofado de conejo",
+  "fluid.mantle.potion": "Poción",
+  "item.mantle.potion_bucket": "Cubeta de poción no fabricable",
+  "item.mantle.potion_bucket.effect.water": "Cubeta de agua",
+  "item.mantle.potion_bucket.contents": "Cubeta de %s"
+}

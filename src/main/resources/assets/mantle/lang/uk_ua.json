@@ -1,0 +1,23 @@
+{
+  "fluid.mantle.powder_snow": "Сипкий сніг",
+  "block.mantle.honey_fluid": "Мед",
+  "fluid.mantle.honey": "Мед",
+  "fluid.mantle.flowing_honey": "Зріджений мед",
+  "item.mantle.honey_bucket": "Відро меду",
+  "block.mantle.beetroot_soup_fluid": "Борщ",
+  "fluid.mantle.beetroot_soup": "Борщ",
+  "fluid.mantle.flowing_beetroot_soup": "Зріджений борщ",
+  "item.mantle.beetroot_soup_bucket": "Відро борщу",
+  "block.mantle.mushroom_stew_fluid": "Тушковані гриби",
+  "fluid.mantle.mushroom_stew": "Тушковані гриби",
+  "fluid.mantle.flowing_mushroom_stew": "Зріджені тушковані гриби",
+  "item.mantle.mushroom_stew_bucket": "Відро тушкованих грибів",
+  "block.mantle.rabbit_stew_fluid": "Тушкований кролик",
+  "fluid.mantle.rabbit_stew": "Тушкований кролик",
+  "fluid.mantle.flowing_rabbit_stew": "Зріджений тушкований кролик",
+  "item.mantle.rabbit_stew_bucket": "Відро тушкованого кролика",
+  "fluid.mantle.potion": "Зілля",
+  "item.mantle.potion_bucket": "Відро нестворюваного зілля",
+  "item.mantle.potion_bucket.effect.water": "Відро води",
+  "item.mantle.potion_bucket.contents": "Відро зілля (%s)"
+}

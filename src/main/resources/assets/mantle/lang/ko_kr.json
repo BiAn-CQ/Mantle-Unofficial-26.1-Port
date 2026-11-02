@@ -1,0 +1,22 @@
+{
+  "block.mantle.honey_fluid": "꿀",
+  "fluid.mantle.honey": "꿀",
+  "fluid.mantle.flowing_honey": "흐르는 꿀",
+  "item.mantle.honey_bucket": "꿀 양동이",
+  "block.mantle.beetroot_soup_fluid": "비트 수프",
+  "fluid.mantle.beetroot_soup": "비트 수프",
+  "fluid.mantle.flowing_beetroot_soup": "흐르는 비트 수프",
+  "item.mantle.beetroot_soup_bucket": "비트 수프 양동이",
+  "block.mantle.mushroom_stew_fluid": "버섯 스튜",
+  "fluid.mantle.mushroom_stew": "버섯 스튜",
+  "fluid.mantle.flowing_mushroom_stew": "흐르는 버섯 스튜",
+  "item.mantle.mushroom_stew_bucket": "버섯 스튜 양동이",
+  "block.mantle.rabbit_stew_fluid": "토끼 스튜",
+  "fluid.mantle.rabbit_stew": "토끼 스튜",
+  "fluid.mantle.flowing_rabbit_stew": "흐르는 토끼 스튜",
+  "item.mantle.rabbit_stew_bucket": "토끼 스튜 양동이",
+  "fluid.mantle.potion": "물약",
+  "item.mantle.potion_bucket": "제작 불가능 물약 양동이",
+  "item.mantle.potion_bucket.effect.water": "물 양동이",
+  "item.mantle.potion_bucket.contents": "%s 양동이"
+}

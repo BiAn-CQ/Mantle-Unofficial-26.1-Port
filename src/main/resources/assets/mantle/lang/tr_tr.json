@@ -1,0 +1,23 @@
+{
+  "fluid.mantle.powder_snow": "Tozlaşmış Kar",
+  "block.mantle.honey_fluid": "Bal",
+  "fluid.mantle.honey": "Bal",
+  "fluid.mantle.flowing_honey": "Akan Bal",
+  "item.mantle.honey_bucket": "Bal Kovası",
+  "block.mantle.beetroot_soup_fluid": "Pancar Çorbası",
+  "fluid.mantle.beetroot_soup": "Pancar Çorbası",
+  "fluid.mantle.flowing_beetroot_soup": "Akan Pancar Çorbası",
+  "item.mantle.beetroot_soup_bucket": "Pancar Çorbası Kovası",
+  "block.mantle.mushroom_stew_fluid": "Mantar Güveç",
+  "fluid.mantle.mushroom_stew": "Mantar Güveç",
+  "fluid.mantle.flowing_mushroom_stew": "Akan Mantar Güveç",
+  "item.mantle.mushroom_stew_bucket": "Mantar Güveç Kovası",
+  "block.mantle.rabbit_stew_fluid": "Tavşan Güveç",
+  "fluid.mantle.rabbit_stew": "Tavşan Güveç",
+  "fluid.mantle.flowing_rabbit_stew": "Akan Tavşan Güveç",
+  "item.mantle.rabbit_stew_bucket": "Tavşan Güveç Kovası",
+  "fluid.mantle.potion": "İksir",
+  "item.mantle.potion_bucket": "Üretilemez İksir Kovası",
+  "item.mantle.potion_bucket.effect.water": "Su Kovası",
+  "item.mantle.potion_bucket.contents": "%s Kovası"
+}

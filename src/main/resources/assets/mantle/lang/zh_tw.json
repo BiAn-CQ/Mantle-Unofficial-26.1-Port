@@ -1,0 +1,23 @@
+{
+  "fluid.mantle.powder_snow": "細雪",
+  "block.mantle.honey_fluid": "蜂蜜",
+  "fluid.mantle.honey": "蜂蜜",
+  "fluid.mantle.flowing_honey": "流動的蜂蜜",
+  "item.mantle.honey_bucket": "蜂蜜桶",
+  "block.mantle.beetroot_soup_fluid": "甜菜湯",
+  "fluid.mantle.beetroot_soup": "甜菜湯",
+  "fluid.mantle.flowing_beetroot_soup": "流動的甜菜湯",
+  "item.mantle.beetroot_soup_bucket": "甜菜湯桶",
+  "block.mantle.mushroom_stew_fluid": "蘑菇湯",
+  "fluid.mantle.mushroom_stew": "蘑菇湯",
+  "fluid.mantle.flowing_mushroom_stew": "流動的蘑菇湯",
+  "item.mantle.mushroom_stew_bucket": "蘑菇湯桶",
+  "block.mantle.rabbit_stew_fluid": "兔肉湯",
+  "fluid.mantle.rabbit_stew": "兔肉湯",
+  "fluid.mantle.flowing_rabbit_stew": "流動的兔肉湯",
+  "item.mantle.rabbit_stew_bucket": "兔肉湯桶",
+  "fluid.mantle.potion": "藥水",
+  "item.mantle.potion_bucket": "不可合成的藥水桶",
+  "item.mantle.potion_bucket.effect.water": "藥水桶",
+  "item.mantle.potion_bucket.contents": "%s桶"
+}
