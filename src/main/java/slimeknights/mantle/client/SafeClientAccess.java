@@ -38,13 +38,12 @@ public class SafeClientAccess {
   }
 
   /** Gets the registry access client side */
-  @Nullable
   public static RegistryAccess getRegistryAccess() {
     Level level = getLevel();
     if (level != null) {
       return level.registryAccess();
     }
-    return null;
+    return slimeknights.mantle.util.RegistryHelper.BUILTIN_REGISTRY_ACCESS;
   }
 
   /** Checks if its advanced tooltips */

@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * @see FlowingFluidObject
  */
 @SuppressWarnings("WeakerAccess")
-public class FluidObject<F extends Fluid> implements Supplier<F>, ItemLike, IdAwareObject {
+public class FluidObject<F extends Fluid> extends HolderWrapper<Fluid,F> implements ItemLike, IdAwareObject {
   /** Fluid name, used for tag creation */
   @Getter @Nonnull
   protected final Identifier id;
@@ -33,34 +33,27 @@ public class FluidObject<F extends Fluid> implements Supplier<F>, ItemLike, IdAw
   @Getter @Nullable
   protected final TagKey<Fluid> commonTag;
   private final Supplier<? extends FluidType> type;
-  private final Supplier<? extends F> still;
 
   /** Main constructor */
-  public FluidObject(Identifier id, @Nullable String tagName, Supplier<? extends FluidType> type, Supplier<? extends F> still) {
+  public FluidObject(Identifier id, @Nullable String tagName, Supplier<? extends FluidType> type, net.minecraft.core.Holder<Fluid> still) {
+    super(still);
     this.id = id;
     this.commonTag = tagName == null ? null : FluidTags.create(Mantle.commonResource(tagName));
     this.type = type;
-    this.still = still;
   }
 
-  @SuppressWarnings("unchecked")
-  public net.minecraft.core.Holder<Fluid> getHolder() {
-    return still instanceof net.minecraft.core.Holder<?> holder ? (net.minecraft.core.Holder<Fluid>)holder : get().builtInRegistryHolder();
-  }
   public net.minecraft.core.HolderSet<Fluid> holderSet() { return net.minecraft.core.HolderSet.direct(getHolder()); }
+
+  /** Keeps the fluid-typed method available to already compiled dependents. */
+  @Override
+  public F get() { return super.get(); }
+
+  /** Registry ID, also available before the holder is bound. */
+  public Identifier id() { return id; }
 
   /** Gets the fluid type for this object */
   public FluidType getType() {
     return type.get();
-  }
-
-  /**
-   * Gets the still form of this fluid
-   * @return  Still form
-   */
-  @Override
-  public F get() {
-    return Objects.requireNonNull(still.get(), "Fluid object missing still fluid");
   }
 
   /**
@@ -70,7 +63,7 @@ public class FluidObject<F extends Fluid> implements Supplier<F>, ItemLike, IdAw
    */
   @Nullable
   public Item getBucket() {
-    Item bucket = still.get().getBucket();
+    Item bucket = get().getBucket();
     if (bucket == Items.AIR) {
       return null;
     }
@@ -84,7 +77,7 @@ public class FluidObject<F extends Fluid> implements Supplier<F>, ItemLike, IdAw
    */
   @Override
   public Item asItem() {
-    return still.get().getBucket();
+    return get().getBucket();
   }
 
   /**

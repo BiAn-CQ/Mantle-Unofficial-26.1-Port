@@ -9,9 +9,10 @@ import slimeknights.mantle.data.datamap.RegistryDataMapLoader;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 
 /** Data class for rendering the fluids in a casting channel */
-public record ChannelFluids(FluidCuboid down, Center center, Side side) {
+public record ChannelFluids(@javax.annotation.Nullable FluidCuboid down, @javax.annotation.Nullable FluidCuboid up, Center center, Side side) {
   public static final RecordLoadable<ChannelFluids> LOADABLE = RecordLoadable.create(
-    FluidCuboid.LOADABLE.requiredField("down", ChannelFluids::down),
+    FluidCuboid.LOADABLE.nullableField("down", ChannelFluids::down),
+    FluidCuboid.LOADABLE.nullableField("up", ChannelFluids::up),
     RecordLoadable.create(
       FluidCuboid.LOADABLE.requiredField("still",   Center::still),
       FluidCuboid.LOADABLE.requiredField("flowing", Center::flowing),

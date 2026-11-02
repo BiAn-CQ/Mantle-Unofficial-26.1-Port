@@ -35,3 +35,6 @@ type="optional"
 versionRange="${jei_range}"
 ordering="NONE"
 side="BOTH"
+
+[[mixins]]
+config="mantle.mixins.json"

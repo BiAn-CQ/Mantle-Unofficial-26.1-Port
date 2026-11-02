@@ -18,8 +18,9 @@ public class MantleNetwork {
    * 2: 1.11.102 - New predicate types, enum loadable nullable field optimization
    * 3: 1.11.108 - New export book command and block entity packet helpers
    * 4: Holder-based entity ingredients and expanded predicate registries
+   * 5: Named fluid-container transfers synchronized with component data
    */
-  public static final NetworkWrapper INSTANCE = new NetworkWrapper(Mantle.getResource("network"), "4");
+  public static final NetworkWrapper INSTANCE = new NetworkWrapper(Mantle.getResource("network"), "5");
 
   /**
    * Registers packets into this network

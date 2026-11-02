@@ -6,5 +6,5 @@ public class RetexturedModelBuilder extends ColoredModelBuilder {
   private final JsonArray retextured = new JsonArray();
   public RetexturedModelBuilder(Identifier model) { super(model); }
   public RetexturedModelBuilder retexture(String name) { retextured.add(name); return this; }
-  @Override public JsonObject toJson(JsonObject json) { super.toJson(json); json.addProperty("type","mantle:retextured"); json.add("retextured_slots",retextured.deepCopy()); return json; }
+  @Override public JsonObject toJson(JsonObject json) { if (retextured.isEmpty()) throw new IllegalStateException("Must have at least 1 texture to be retextured."); super.toJson(json); json.addProperty("type","mantle:retextured"); json.add("retextured_slots",retextured.deepCopy()); return json; }
 }

@@ -48,5 +48,27 @@
   "gui.mantle.fluid.millibucket": "%s ms",
 
   "block.mantle.tank.drained": "Vidangé de %s ms %s",
-  "block.mantle.tank.filled": "Rempli de %s ms de %s"
+  "block.mantle.tank.filled": "Rempli de %s ms de %s",
+
+  "fluid.mantle.powder_snow": "Neige poudreuse",
+  "block.mantle.honey_fluid": "Miel",
+  "fluid.mantle.honey": "Miel",
+  "fluid.mantle.flowing_honey": "Miel ruisselant",
+  "item.mantle.honey_bucket": "Seau de miel",
+  "block.mantle.beetroot_soup_fluid": "Soupe de betterave",
+  "fluid.mantle.beetroot_soup": "Soupe de betterave",
+  "fluid.mantle.flowing_beetroot_soup": "Soupe de betterave ruisselante",
+  "item.mantle.beetroot_soup_bucket": "Seau de soupe de betterave",
+  "block.mantle.mushroom_stew_fluid": "Soupe de champignon",
+  "fluid.mantle.mushroom_stew": "Soupe de champignon",
+  "fluid.mantle.flowing_mushroom_stew": "Soupe de champignon ruisselante",
+  "item.mantle.mushroom_stew_bucket": "Seau de soupe de champignon",
+  "block.mantle.rabbit_stew_fluid": "Ragoût de lapin",
+  "fluid.mantle.rabbit_stew": "Ragoût de lapin",
+  "fluid.mantle.flowing_rabbit_stew": "Ragoût de lapin ruisselant",
+  "item.mantle.rabbit_stew_bucket": "Seau de ragoût de lapin",
+  "fluid.mantle.potion": "Potion",
+  "item.mantle.potion_bucket": "Seau de potion non fabricable",
+  "item.mantle.potion_bucket.effect.water": "Seau d'eau",
+  "item.mantle.potion_bucket.contents": "Seau de %s"
 }

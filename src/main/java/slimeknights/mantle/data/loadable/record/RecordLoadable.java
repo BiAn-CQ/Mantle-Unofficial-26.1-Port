@@ -104,28 +104,18 @@ public interface RecordLoadable<T> extends Loadable<T>, RecordJsonDeserializer<T
   /* Mapping - switches to the record version of the methods */
 
   @Override
-  default <M> RecordLoadable<M> xmap(BiFunction<T,ErrorFactory,M> from, BiFunction<M,ErrorFactory,T> to) {
-    return MappedLoadable.of(this, from, to);
+  default <M> RecordLoadable<M> mapChecked(BiFunction<? super T,ErrorFactory,? extends M> constructor, BiFunction<? super M,ErrorFactory,? extends T> getter) {
+    return MappedLoadable.of(this, constructor, getter);
   }
 
   @Override
-  default <M> RecordLoadable<M> comapFlatMap(BiFunction<T,ErrorFactory,M> from, Function<M,T> to) {
-    return xmap(from, MappedLoadable.flatten(to));
-  }
-
-  @Override
-  default <M> RecordLoadable<M> flatComap(Function<T,M> from, BiFunction<M,ErrorFactory,T> to) {
-    return xmap(MappedLoadable.flatten(from), to);
-  }
-
-  @Override
-  default <M> RecordLoadable<M> flatXmap(Function<T,M> from, Function<M,T> to) {
-    return xmap(MappedLoadable.flatten(from), MappedLoadable.flatten(to));
+  default <M> RecordLoadable<M> map(Function<? super T,? extends M> constructor, Function<? super M,? extends T> getter) {
+    return mapChecked(Loadable.noErrors(constructor), Loadable.noErrors(getter));
   }
 
   @Override
   default RecordLoadable<T> validate(BiFunction<T,ErrorFactory,T> validator) {
-    return xmap(validator, validator);
+    return mapChecked(validator, validator);
   }
 
 

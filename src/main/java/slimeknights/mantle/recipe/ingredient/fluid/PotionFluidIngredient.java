@@ -66,6 +66,13 @@ public class PotionFluidIngredient extends FluidIngredient {
     return of(potion, List.of(fluids));
   }
 
+  public static FluidIngredient of(HolderSet<Potion> potion, TagKey<Fluid> fluids) {
+    return of(potion, IngredientHelper.fluidSet(fluids));
+  }
+  public static FluidIngredient ofPotions(HolderSet<Potion> potion) {
+    return of(potion, net.neoforged.neoforge.common.Tags.Fluids.POTION);
+  }
+
   /** Creates a potion ingredient matching a tag */
   public static FluidIngredient of(Holder<Potion> potion, TagKey<Fluid> tag) {
     return of(potion, IngredientHelper.fluidSet(tag));
@@ -73,7 +80,7 @@ public class PotionFluidIngredient extends FluidIngredient {
 
   /** Creates a potion ingredient using the standard potion tag */
   public static FluidIngredient of(Holder<Potion> potion) {
-    return of(potion, MantleTags.Fluids.POTION);
+    return of(potion, net.neoforged.neoforge.common.Tags.Fluids.POTION);
   }
 
   @Override

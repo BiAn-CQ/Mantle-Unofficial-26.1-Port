@@ -2,7 +2,7 @@
   "type": "mantle:fill_item",
   "fluid": {
     "amount": 500,
-    "tag": "mantle:water"
+    "tag": "c:water"
   },
   "input": "minecraft:glass_bottle",
   "result": {

@@ -124,7 +124,7 @@ public final class LoadableRecipeSerializer {
   private static TypedMap buildContext(RecipeSerializer<?> serializer, Supplier<? extends RecipeType<?>> type, Object opsOrAccess, Identifier id) {
     TypedMapBuilder builder = TypedMapBuilder.builder()
       .put(ContextKey.ID, id)
-      .put(ContextKey.DEBUG, "Recipe decoded through a 26.1 codec")
+      .put(ContextKey.DEBUG, "Recipe of type " + net.minecraft.core.registries.BuiltInRegistries.RECIPE_SERIALIZER.getKey(serializer))
       .put(SERIALIZER, serializer);
     if (opsOrAccess instanceof DynamicOps<?> ops) {
       builder.putAll(ContextKey.opsContext(ops).build());

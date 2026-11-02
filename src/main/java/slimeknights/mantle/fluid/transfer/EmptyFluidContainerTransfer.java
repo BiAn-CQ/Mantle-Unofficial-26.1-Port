@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 
 /** Fluid transfer info that empties a fluid from an item */
 @RequiredArgsConstructor
-public class EmptyFluidContainerTransfer implements IFluidContainerTransfer {
+public class EmptyFluidContainerTransfer implements IFluidContainerTransfer, IDisplayFluidTransfer {
   public static final Identifier ID = Mantle.getResource("empty_item");
 
   public static final slimeknights.mantle.data.loadable.record.RecordLoadable<EmptyFluidContainerTransfer> LOADER = slimeknights.mantle.data.loadable.record.RecordLoadable.create(
@@ -122,4 +122,13 @@ public class EmptyFluidContainerTransfer implements IFluidContainerTransfer {
       return factory.apply(input, result, fluid);
     }
   }
+
+  @Override public java.util.List<ItemStack> inputItems() {
+    var items = new java.util.ArrayList<ItemStack>();
+    IFluidContainerTransfer.addIngredientItems(input, item -> items.add(new ItemStack(item)));
+    return java.util.List.copyOf(items);
+  }
+  @Override public java.util.List<ItemStack> resultItems() { return java.util.List.of(result.get()); }
+  @Override public java.util.List<FluidStack> inputFluids() { return java.util.List.of(); }
+  @Override public java.util.List<FluidStack> resultFluids() { return java.util.List.of(fluid.get()); }
 }

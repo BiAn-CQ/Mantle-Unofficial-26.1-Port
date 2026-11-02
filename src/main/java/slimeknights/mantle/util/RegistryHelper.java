@@ -20,6 +20,9 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class RegistryHelper {
+  /** Registry access available even before a world has been opened. */
+  public static final net.minecraft.core.RegistryAccess.Frozen BUILTIN_REGISTRY_ACCESS = net.minecraft.core.RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+
   private RegistryHelper() {}
 
   @SuppressWarnings("unchecked")

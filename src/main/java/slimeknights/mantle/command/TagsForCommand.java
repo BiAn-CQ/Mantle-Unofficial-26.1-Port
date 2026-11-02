@@ -274,6 +274,11 @@ public class TagsForCommand {
       if (fluid.getType() != Fluids.EMPTY) {
         return printOwningTags(context, BuiltInRegistries.FLUID, fluid.getType());
       }
+      var handler = level.getCapability(Capabilities.Fluid.BLOCK, blockTrace.getBlockPos(), blockTrace.getDirection());
+      if (handler != null && handler.size() > 0) {
+        FluidStack contained = FluidUtil.getStack(handler, 0);
+        if (!contained.isEmpty()) return printOwningTags(context, BuiltInRegistries.FLUID, contained.getFluid());
+      }
     }
     // failed
     source.sendSuccess(() -> NO_TARGETED_FLUID, true);

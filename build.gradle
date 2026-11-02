@@ -96,12 +96,26 @@ neoForge {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+    jeiTestApi
+}
+
+// JEI's API references Minecraft classes, so FML must load it in the game
+// layer during JUnit runs. This test-only jar contains the published API.
+def jeiApiForTests = tasks.register('jeiApiForTests', Jar) {
+    archiveFileName = 'jei-api-game-library.jar'
+    destinationDirectory = layout.buildDirectory.dir('tmp/test-libraries')
+    from { configurations.jeiTestApi.collect { zipTree(it) } }
+    exclude 'META-INF/MANIFEST.MF'
+    manifest.attributes('FMLModType': 'GAMELIBRARY', 'Automatic-Module-Name': 'jei.api.test')
 }
 
 dependencies {
     // JEI 26.1 is optional at runtime, but its API is needed to compile the
     // Mantle ingredient helpers and plugin.
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    testCompileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    jeiTestApi "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    testRuntimeOnly files(jeiApiForTests)
     localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.46'

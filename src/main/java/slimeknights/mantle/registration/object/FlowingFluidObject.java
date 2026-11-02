@@ -24,12 +24,12 @@ public class FlowingFluidObject<F extends FlowingFluid> extends FluidObject<F> {
   /** Tag in the mod namespace, exact match */
   @Getter @Nonnull
   private final TagKey<Fluid> localTag;
-  private final Supplier<? extends F> flowing;
+  private final net.minecraft.core.Holder<Fluid> flowing;
   @Nullable
   private final Supplier<? extends LiquidBlock> block;
 
   /** Main constructor */
-  public FlowingFluidObject(Identifier id, @Nullable String tagName, Supplier<? extends FluidType> type, Supplier<? extends F> still, Supplier<? extends F> flowing, @Nullable Supplier<? extends LiquidBlock> block) {
+  public FlowingFluidObject(Identifier id, @Nullable String tagName, Supplier<? extends FluidType> type, net.minecraft.core.Holder<Fluid> still, net.minecraft.core.Holder<Fluid> flowing, @Nullable Supplier<? extends LiquidBlock> block) {
     super(id, tagName, type, still);
     this.localTag = FluidTags.create(id);
     this.flowing = flowing;
@@ -49,14 +49,12 @@ public class FlowingFluidObject<F extends FlowingFluid> extends FluidObject<F> {
    * Gets the flowing form of this fluid
    * @return  flowing form
    */
+  @SuppressWarnings("unchecked")
   public F getFlowing() {
-    return Objects.requireNonNull(flowing.get(), "Fluid object missing flowing fluid");
+    return (F)flowing.value();
   }
 
-  @SuppressWarnings("unchecked")
-  public net.minecraft.core.Holder<Fluid> getFlowingHolder() {
-    return flowing instanceof net.minecraft.core.Holder<?> holder ? (net.minecraft.core.Holder<Fluid>)holder : getFlowing().builtInRegistryHolder();
-  }
+  public net.minecraft.core.Holder<Fluid> getFlowingHolder() { return flowing; }
 
   @Override public net.minecraft.core.HolderSet<Fluid> holderSet() { return net.minecraft.core.HolderSet.direct(getHolder(), getFlowingHolder()); }
 

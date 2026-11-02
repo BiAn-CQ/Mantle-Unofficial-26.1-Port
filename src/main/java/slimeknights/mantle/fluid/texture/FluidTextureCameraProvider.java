@@ -13,15 +13,15 @@ import java.util.Set;
 public class FluidTextureCameraProvider extends DeanimateTextureGenerator {
   private final AbstractFluidTextureProvider provider;
   /** Fluid types from the provider to ignore */
-  private final Set<FluidType> skip;
+  private final Set<Identifier> skip;
 
-  public FluidTextureCameraProvider(PackOutput packOutput, AbstractFluidTextureProvider provider, Set<FluidType> skip) {
+  public FluidTextureCameraProvider(PackOutput packOutput, AbstractFluidTextureProvider provider, Set<Identifier> skip) {
     super(packOutput);
     this.provider = provider;
     this.skip = skip;
   }
 
-  public FluidTextureCameraProvider(PackOutput packOutput, ResourceManager resourceManager, AbstractFluidTextureProvider provider, Set<FluidType> skip) {
+  public FluidTextureCameraProvider(PackOutput packOutput, ResourceManager resourceManager, AbstractFluidTextureProvider provider, Set<Identifier> skip) {
     super(packOutput, resourceManager);
     this.provider = provider;
     this.skip = skip;
@@ -37,12 +37,12 @@ public class FluidTextureCameraProvider extends DeanimateTextureGenerator {
 
   @Override
   protected void addTextures() {
-    for (Entry<FluidType, FluidTexture.Builder> entry : provider.getAllTextures().entrySet()) {
+    for (Entry<Identifier, FluidTexture.Builder> entry : provider.getAllTextures().entrySet()) {
       if (!skip.contains(entry.getKey())) {
         FluidTexture.Builder builder = entry.getValue();
         Identifier camera = builder.getCamera();
         if (camera != null) {
-          deanimate(builder.getStill(), camera);
+          deanimate(builder.getStill().withPrefix("textures/").withSuffix(".png"), camera);
         }
       }
     }

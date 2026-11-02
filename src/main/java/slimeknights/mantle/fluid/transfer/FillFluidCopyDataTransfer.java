@@ -54,4 +54,12 @@ public class FillFluidCopyDataTransfer extends FillFluidContainerTransfer {
     json.addProperty("type", ID.toString());
     return json;
   }
+
+  private List<ItemStack> resultItems;
+  @Override public List<ItemStack> resultItems() {
+    if (resultItems == null) resultItems = inputFluids().stream()
+      .map(fluid -> DataComponentHelper.copy(result.copy(), fluid, copyComponents)).toList();
+    return resultItems;
+  }
+  @Override public List<SlotLink> linkedSlots() { return List.of(SlotLink.INPUT_FLUIDS, SlotLink.RESULT_ITEMS); }
 }

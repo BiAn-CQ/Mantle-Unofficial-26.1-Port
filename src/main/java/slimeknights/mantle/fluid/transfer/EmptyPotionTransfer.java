@@ -1,5 +1,14 @@
 package slimeknights.mantle.fluid.transfer;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Optional;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.level.material.Fluid;
+import net.neoforged.neoforge.common.Tags;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import net.minecraft.resources.Identifier;
@@ -39,7 +48,7 @@ public class EmptyPotionTransfer extends EmptyFluidContainerTransfer {
   public boolean matches(ItemStack stack, FluidStack fluid) {
     // to match, must either have water in the stack, or a potion fluid
     return super.matches(stack, fluid)
-      && (TagPreference.getPreference(MantleTags.Fluids.POTION).isPresent() || stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).equals(WATER));
+      && (TagPreference.getPreference(net.neoforged.neoforge.common.Tags.Fluids.POTION).isPresent() || stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).equals(WATER));
   }
 
   @Override
@@ -49,7 +58,7 @@ public class EmptyPotionTransfer extends EmptyFluidContainerTransfer {
       return fluid.copy();
     }
     // if it's not water, we need a potion fluid to return anything
-    return TagPreference.getPreference(MantleTags.Fluids.POTION)
+    return TagPreference.getPreference(net.neoforged.neoforge.common.Tags.Fluids.POTION)
       .map(value -> {
         FluidStack result = new FluidStack(value, fluid.getAmount());
         return DataComponentHelper.copy(result, stack, DataComponents.POTION_CONTENTS);
@@ -65,5 +74,72 @@ public class EmptyPotionTransfer extends EmptyFluidContainerTransfer {
     json.addProperty("type", ID.toString());
     DESERIALIZER.serialize(this, json);
     return json;
+  }
+  /* JEI */
+  private ItemStack[] inputItemsForIngredient() { return super.inputItems().toArray(ItemStack[]::new); }
+  private List<ItemStack> inputItems;
+  private List<FluidStack> resultFluids;
+
+  /** Ensures all display contents are generated */
+  private void ensureGenerated() {
+    if (inputItems == null) {
+      ItemStack[] inputs = inputItemsForIngredient();
+      int listSize = BuiltInRegistries.POTION.size() * inputs.length;
+      List<ItemStack> inputItems = new ArrayList<>(listSize);
+      List<FluidStack> resultFluids = new ArrayList<>(listSize);
+
+      // start by adding water - need 1 copy per input
+      FluidStack resultWater = this.fluid.get();
+      PotionContents waterContents = new PotionContents(Potions.WATER);
+      for (ItemStack input : inputs) {
+        ItemStack copy = input.copy();
+        copy.set(DataComponents.POTION_CONTENTS, waterContents);
+        inputItems.add(copy);
+        resultFluids.add(resultWater);
+      }
+
+      // if we have a potion fluid, add all other potions
+      Optional<Fluid> potionFluidOptional = TagPreference.getPreference(Tags.Fluids.POTION);
+      if (potionFluidOptional.isPresent()) {
+        Fluid potionFluid = potionFluidOptional.get();
+        Iterator<Holder<Potion>> iterator = java.util.stream.StreamSupport.stream(BuiltInRegistries.POTION.asHolderIdMap().spliterator(), false).iterator();
+        while (iterator.hasNext()) {
+          Holder<Potion> potion = iterator.next();
+          if (potion.equals(Potions.WATER)) {
+            continue;
+          }
+          PotionContents contents = new PotionContents(potion);
+          FluidStack resultFluid = new FluidStack(potionFluid, this.fluid.getAmount());
+          resultFluid.set(DataComponents.POTION_CONTENTS, contents);
+          // add each input with the potion
+          for (ItemStack stack : inputs) {
+            ItemStack input = stack.copy();
+            input.set(DataComponents.POTION_CONTENTS, contents);
+            inputItems.add(input);
+            // add a copy of the fluid with each input
+            resultFluids.add(resultFluid);
+          }
+        }
+      }
+      this.inputItems = List.copyOf(inputItems);
+      this.resultFluids = List.copyOf(resultFluids);
+    }
+  }
+
+  @Override
+  public List<ItemStack> inputItems() {
+    ensureGenerated();
+    return inputItems;
+  }
+
+  @Override
+  public List<FluidStack> resultFluids() {
+    ensureGenerated();
+    return resultFluids;
+  }
+
+  @Override
+  public List<SlotLink> linkedSlots() {
+    return List.of(SlotLink.INPUT_ITEMS, SlotLink.RESULT_FLUIDS);
   }
 }

@@ -79,7 +79,9 @@ public class IngredientHelper {
   /** Creates a holder set from the given tag */
   @SuppressWarnings("deprecation")
   public static <T> HolderSet<T> tagSet(Registry<T> registry, TagKey<T> tag) {
-    return HolderSet.emptyNamed(registry, tag);
+    // A data-generation placeholder cannot be enumerated. Use the live tag
+    // when constructing ingredients after the world's tags have been loaded.
+    return registry.get(tag).orElseGet(() -> HolderSet.emptyNamed(registry, tag));
   }
 
   /** Creates a holder set from the given item tag */

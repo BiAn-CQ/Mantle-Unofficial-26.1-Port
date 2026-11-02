@@ -57,5 +57,27 @@
   "gui.mantle.fluid.sip": "%s goles",
 
   "block.mantle.tank.drained": "Drenado %s mb de %s",
-  "block.mantle.tank.filled": "Preenchido %s mb de %s"
+  "block.mantle.tank.filled": "Preenchido %s mb de %s",
+
+  "fluid.mantle.powder_snow": "Neve em Pó",
+  "block.mantle.honey_fluid": "Mel",
+  "fluid.mantle.honey": "Mel",
+  "fluid.mantle.flowing_honey": "Fluido de Mel",
+  "item.mantle.honey_bucket": "Balde de Mel",
+  "block.mantle.beetroot_soup_fluid": "Sopa de Beterraba",
+  "fluid.mantle.beetroot_soup": "Sopa de Beterraba",
+  "fluid.mantle.flowing_beetroot_soup": "Fluido de Sopa de Beterraba",
+  "item.mantle.beetroot_soup_bucket": "Balde de Sopa de Beterraba",
+  "block.mantle.mushroom_stew_fluid": "Ensopado de Cogumelos",
+  "fluid.mantle.mushroom_stew": "Ensopado de Cogumelos",
+  "fluid.mantle.flowing_mushroom_stew": "Fluido de Ensopado de Cogumelos",
+  "item.mantle.mushroom_stew_bucket": "Balde de Ensopado de Cogumelos",
+  "block.mantle.rabbit_stew_fluid": "Ensopado de Coelho",
+  "fluid.mantle.rabbit_stew": "Ensopado de Coelho",
+  "fluid.mantle.flowing_rabbit_stew": "Fluido de Ensopado de Coelho",
+  "item.mantle.rabbit_stew_bucket": "Balde de Ensopado de Coelho",
+  "fluid.mantle.potion": "Poção",
+  "item.mantle.potion_bucket": "Balde de Poção Não Fabricável",
+  "item.mantle.potion_bucket.effect.water": "Balde de Água",
+  "item.mantle.potion_bucket.contents": "Balde de %s"
 }

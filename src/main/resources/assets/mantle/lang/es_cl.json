@@ -89,5 +89,27 @@
   "block.mantle.tank.filled": "Llenados %s mb %s",
   "block.mantle.retextured.id": "ID de Textura: %s",
 
-  "item.mantle.book.click_to_open": "Haz click derecho para abrir"
+  "item.mantle.book.click_to_open": "Haz click derecho para abrir",
+
+  "fluid.mantle.powder_snow": "Nieve polvo",
+  "block.mantle.honey_fluid": "Miel",
+  "fluid.mantle.honey": "Miel",
+  "fluid.mantle.flowing_honey": "Miel fluyendo",
+  "item.mantle.honey_bucket": "Balde con Miel",
+  "block.mantle.beetroot_soup_fluid": "Sopa de Betarragas",
+  "fluid.mantle.beetroot_soup": "Sopa de Betarragas",
+  "fluid.mantle.flowing_beetroot_soup": "Sopa de Betarragas fluyendo",
+  "item.mantle.beetroot_soup_bucket": "Balde con Sopa de Betarragas",
+  "block.mantle.mushroom_stew_fluid": "Cazuela de Callampas",
+  "fluid.mantle.mushroom_stew": "Cazuela de Callampas",
+  "fluid.mantle.flowing_mushroom_stew": "Cazuela de Callampas fluyendo",
+  "item.mantle.mushroom_stew_bucket": "Balde con Cazuela de Callampas",
+  "block.mantle.rabbit_stew_fluid": "Cazuela de Conejo",
+  "fluid.mantle.rabbit_stew": "Cazuela de Conejo",
+  "fluid.mantle.flowing_rabbit_stew": "Cazuela de Conejo fluyendo",
+  "item.mantle.rabbit_stew_bucket": "Balde con Cazuela de Conejo",
+  "fluid.mantle.potion": "Poción",
+  "item.mantle.potion_bucket": "Balde con poción no fabricable",
+  "item.mantle.potion_bucket.effect.water": "Balde con agua",
+  "item.mantle.potion_bucket.contents": "Balde con %s"
 }

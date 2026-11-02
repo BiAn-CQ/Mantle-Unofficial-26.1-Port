@@ -109,7 +109,7 @@ public final class RetexturableRecipeExtension implements ICraftingCategoryExten
     builder.createFocusLink(Streams.concat(
       Stream.of(output),
       Arrays.stream(textureSlots)
-        .mapToObj(index -> inputs.get(MantleJEIConstants.getCraftingIndex(index, recipe.getWidth(), recipe.getHeight())))
+        .mapToObj(index -> inputs.get(craftingGridHelper.getCraftingIndex(index, recipe.getWidth(), recipe.getHeight())))
     ).toArray(IRecipeSlotBuilder[]::new));
   }
 }

@@ -1,0 +1,8 @@
+{
+  "model": {
+    "type": "mantle:fluid_container",
+    "parent": "neoforge:item/bucket_drip",
+    "fluid": "mantle:rabbit_stew",
+    "flip_gas": false
+  }
+}

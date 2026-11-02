@@ -47,17 +47,17 @@ public class MantleFluidTransferProvider extends AbstractFluidContainerTransferP
 
   @Override
   protected void addTransfers() {
-    addTransfer("wet_sponge", new FillFluidContainerTransfer(Ingredient.of(Items.SPONGE), ItemOutput.fromItem(Items.WET_SPONGE), FluidIngredient.of(MantleTags.Fluids.WATER, MantleValues.BOTTLE)));
+    addTransfer("wet_sponge", new FillFluidContainerTransfer(Ingredient.of(Items.SPONGE), ItemOutput.fromItem(Items.WET_SPONGE), FluidIngredient.of(net.neoforged.neoforge.common.Tags.Fluids.WATER, net.neoforged.neoforge.fluids.FluidType.BUCKET_VOLUME)));
 
     // potions
     addPotion("potion/",           Items.POTION,  null);
     addPotion("potion/splash/",    Items.SPLASH_POTION,    MantleTags.Items.SPLASH_BOTTLE);
     addPotion("potion/lingering/", Items.LINGERING_POTION, MantleTags.Items.LINGERING_BOTTLE);
     // foods
-    optionalFillEmpty("honey_bottle_",  Items.HONEY_BOTTLE,  Items.GLASS_BOTTLE, MantleTags.Fluids.HONEY,         MantleValues.BOTTLE, false);
-    optionalFillEmpty("beetroot_soup_", Items.BEETROOT_SOUP, Items.BOWL,         MantleTags.Fluids.BEETROOT_SOUP, MantleValues.BOWL,   false);
-    optionalFillEmpty("mushroom_stew_", Items.MUSHROOM_STEW, Items.BOWL,         MantleTags.Fluids.MUSHROOM_STEW, MantleValues.BOWL,   false);
-    optionalFillEmpty("rabbit_stew_",   Items.RABBIT_STEW,   Items.BOWL,         MantleTags.Fluids.RABBIT_STEW,   MantleValues.BOWL,   false);
+    optionalFillEmpty("honey_bottle_",  Items.HONEY_BOTTLE,  Items.GLASS_BOTTLE, net.neoforged.neoforge.common.Tags.Fluids.HONEY,         MantleValues.BOTTLE, false);
+    optionalFillEmpty("beetroot_soup_", Items.BEETROOT_SOUP, Items.BOWL,         net.neoforged.neoforge.common.Tags.Fluids.BEETROOT_SOUP, MantleValues.BOWL,   false);
+    optionalFillEmpty("mushroom_stew_", Items.MUSHROOM_STEW, Items.BOWL,         net.neoforged.neoforge.common.Tags.Fluids.MUSHROOM_STEW, MantleValues.BOWL,   false);
+    optionalFillEmpty("rabbit_stew_",   Items.RABBIT_STEW,   Items.BOWL,         net.neoforged.neoforge.common.Tags.Fluids.RABBIT_STEW,   MantleValues.BOWL,   false);
   }
 
   /** Adds generic fill and empty for a container */
@@ -71,7 +71,7 @@ public class MantleFluidTransferProvider extends AbstractFluidContainerTransferP
     // for emptying, if they are absent just use glass bottles
     // for filling, if they are absent then we can't do the fill recipes
     Ingredient container;
-    ICondition potionCondition = new TagFilledCondition<>(MantleTags.Fluids.POTION);
+    ICondition potionCondition = new TagFilledCondition<>(net.neoforged.neoforge.common.Tags.Fluids.POTION);
     ICondition[] potionConditions;
     ICondition[] waterConditions;
     if (bottleTag != null) {
@@ -94,7 +94,10 @@ public class MantleFluidTransferProvider extends AbstractFluidContainerTransferP
     addTransfer(prefix + "fill_potion", new FillFluidCopyDataTransfer(
       container,
       ItemOutput.fromItem(filled),
-      FluidIngredient.of(MantleTags.Fluids.POTION, MantleValues.BOTTLE), List.of(DataComponents.POTION_CONTENTS)),
+      new net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient(
+        slimeknights.mantle.recipe.ingredient.fluid.PotionFluidIngredient.ofPotions(
+          new net.neoforged.neoforge.registries.holdersets.NotHolderSet<>(BuiltInRegistries.POTION, HolderSet.direct(Potions.WATER))),
+        MantleValues.BOTTLE), List.of(DataComponents.POTION_CONTENTS)),
       potionConditions);
     // water bottles are 1/3 of a bucket, to prevent water dupes we round up on fill and down on empty, hence fill being 500mb
     // we can always fill water bottles, not always fill splash and lingering
@@ -102,7 +105,7 @@ public class MantleFluidTransferProvider extends AbstractFluidContainerTransferP
       container,
       ItemOutput.fromTemplate(new net.minecraft.world.item.ItemStackTemplate(filled.asItem(), 1,
         net.minecraft.core.component.DataComponentPatch.builder().set(DataComponents.POTION_CONTENTS, new PotionContents(Potions.WATER)).build())),
-      FluidIngredient.of(MantleTags.Fluids.WATER, MantleValues.BOTTLE * 2)),
+      FluidIngredient.of(net.neoforged.neoforge.common.Tags.Fluids.WATER, MantleValues.BOTTLE * 2)),
       waterConditions);
   }
 }

@@ -23,15 +23,18 @@ public class Config {
 
   /** If true, enables the fluid fog fix. If false, disables it for better shader compatability. */
   public static final BooleanValue ENABLE_FLUID_FOG_FIX;
+  public static final BooleanValue SHOW_POTION_FLUID_IN_JEI;
+  public static final BooleanValue POWDER_SNOW_CAULDRON_FLUID;
 
 	/** List of preferences for tag outputs */
 	private static final List<String> DEFAULT_TAG_PREFERENCES = Arrays.asList("minecraft", "tconstruct", "tmechworks", "metalborn", "embers", "create", "immersiveengineering", "mekanism", "thermal");
 	public static final ConfigValue<List<? extends String>> TAG_PREFERENCES;
 
-	public static final ModConfigSpec CLIENT_SPEC, SERVER_SPEC;
+	public static final ModConfigSpec CLIENT_SPEC, COMMON_SPEC, SERVER_SPEC;
 
 	static {
     ModConfigSpec.Builder client = new ModConfigSpec.Builder();
+    ModConfigSpec.Builder common = new ModConfigSpec.Builder();
     ModConfigSpec.Builder server = new ModConfigSpec.Builder();
 
 		// client options
@@ -51,6 +54,12 @@ public class Config {
         "Best fix is to fix your shaders though, so you can have no broken visuals.")
       .translation("config.mantle.enableFluidFogFix")
       .define("enableFluidFogFix", true);
+
+    SHOW_POTION_FLUID_IN_JEI = client.comment("Show all registered potion variants in JEI when the shared potion fluid is enabled.")
+      .define("showPotionFluid", true);
+    POWDER_SNOW_CAULDRON_FLUID = common.comment("Register shared powder snow for the vanilla cauldron when available; skip if another fluid already owns it.")
+      .define("powder_snow_cauldron_fluid", true);
+    COMMON_SPEC = common.build();
 
 		// server options
 		TAG_PREFERENCES = server.comment("Preferences for outputs from tags used in automatic compat in recipes")

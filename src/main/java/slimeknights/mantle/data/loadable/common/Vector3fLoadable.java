@@ -50,9 +50,9 @@ public enum Vector3fLoadable implements RecordLoadable<Vector3f> {
 
   @Override
   public void serialize(Vector3f vector, JsonObject json) {
-    if (vector.x != 0) json.addProperty("x", vector.x);
-    if (vector.y != 0) json.addProperty("y", vector.y);
-    if (vector.z != 0) json.addProperty("z", vector.z);
+    json.addProperty("x", vector.x);
+    json.addProperty("y", vector.y);
+    json.addProperty("z", vector.z);
   }
 
   @Override

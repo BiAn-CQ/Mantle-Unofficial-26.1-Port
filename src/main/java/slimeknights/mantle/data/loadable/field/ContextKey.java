@@ -48,7 +48,7 @@ public class ContextKey<T> implements Key<T> {
   /** Creates context for data generation or a world registry lookup. */
   public static TypedMapBuilder lookupContext(@Nullable HolderLookup.Provider lookup) {
     return TypedMapBuilder.builder().put(REGISTRY_LOOKUP,
-      new RegistryOps.HolderLookupAdapter(lookup == null ? RegistryAccess.EMPTY : lookup));
+      (lookup == null ? RegistryAccess.EMPTY : lookup).createSerializationContext(JsonOps.INSTANCE).lookupProvider);
   }
 
   /** Preserves the registry and condition information carried by a native codec. */

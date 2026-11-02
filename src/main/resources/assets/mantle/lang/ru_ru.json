@@ -89,5 +89,27 @@
   "block.mantle.tank.filled": "Заполнено %s мВ %s",
   "block.mantle.retextured.id": "ID текстуры: %s",
 
-  "item.mantle.book.click_to_open": "§7Щёлкните [§6ПКМ§7], чтобы открыть."
+  "item.mantle.book.click_to_open": "§7Щёлкните [§6ПКМ§7], чтобы открыть.",
+
+  "fluid.mantle.powder_snow": "Порошкообразный снег",
+  "block.mantle.honey_fluid": "Мёд",
+  "fluid.mantle.honey": "Мёд",
+  "fluid.mantle.flowing_honey": "Текучий мёд",
+  "item.mantle.honey_bucket": "Ведро мёда",
+  "block.mantle.beetroot_soup_fluid": "Свекольный суп",
+  "fluid.mantle.beetroot_soup": "Свекольный суп",
+  "fluid.mantle.flowing_beetroot_soup": "Текучий свекольный суп",
+  "item.mantle.beetroot_soup_bucket": "Ведро свекольного супа",
+  "block.mantle.mushroom_stew_fluid": "Тушёные грибы",
+  "fluid.mantle.mushroom_stew": "Тушёные грибы",
+  "fluid.mantle.flowing_mushroom_stew": "Текучие тушёные грибы",
+  "item.mantle.mushroom_stew_bucket": "Ведро тушёных грибов",
+  "block.mantle.rabbit_stew_fluid": "Тушёный кролик",
+  "fluid.mantle.rabbit_stew": "Тушёный кролик",
+  "fluid.mantle.flowing_rabbit_stew": "Текучий тушёный кролик",
+  "item.mantle.rabbit_stew_bucket": "Ведро тушёного кролика",
+  "fluid.mantle.potion": "Зелье",
+  "item.mantle.potion_bucket": "Несоздаваемое зелье в ведре",
+  "item.mantle.potion_bucket.effect.water": "Ведро воды",
+  "item.mantle.potion_bucket.contents": "%s в ведре"
 }

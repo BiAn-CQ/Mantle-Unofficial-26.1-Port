@@ -50,6 +50,9 @@ public abstract class HolderWrapper<R,T extends R> implements Supplier<T>, IdAwa
     this.holder = wrapper.holder;
   }
 
+  /** Returns whether the underlying registry entry is bound. */
+  public boolean isBound() { return holder.isBound(); }
+
   @Override
   public Identifier getId() {
     return key.identifier();

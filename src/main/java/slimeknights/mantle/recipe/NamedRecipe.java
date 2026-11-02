@@ -50,6 +50,11 @@ public interface NamedRecipe<T> {
     return (Class<? extends NamedRecipe<T>>)(Class<?>) NamedRecipe.class;
   }
 
+  /** Stream codec for an ID and an arbitrary recipe value. */
+  static <B extends io.netty.buffer.ByteBuf,R> net.minecraft.network.codec.StreamCodec<B,NamedRecipe<R>> streamCodec(net.minecraft.network.codec.StreamCodec<B,R> codec) {
+    return net.minecraft.network.codec.StreamCodec.composite(Identifier.STREAM_CODEC, NamedRecipe::id, codec, NamedRecipe::recipe, NamedRecipe::of);
+  }
+
   /** Wrapper around an ID and recipe pair. */
   record Wrapped<T>(Identifier id, List<Identifier> sourceIds, T recipe) implements NamedRecipe<T> {
     /** Creates a wrapped recipe using the recipe ID as the parent ID. */

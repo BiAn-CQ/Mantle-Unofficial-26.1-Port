@@ -100,4 +100,22 @@ public interface MultiNamedRecipe<T> {
   static <T, I extends RecipeInput, R extends Recipe<I>> List<NamedRecipe<T>> getNamedRecipes(HolderLookup.Provider provider, RecipeManager manager, RecipeType<R> type, Class<T> recipeClass) {
     return streamNamedRecipes(provider, manager, type, recipeClass).toList();
   }
+
+  Comparator<NamedRecipe<?>> NAMED_COMPARATOR = Comparator.comparing((NamedRecipe<?> r) -> r.recipe() instanceof MultiNamedRecipe ? 1 : 0).thenComparing(NamedRecipe::id);
+
+  private static <T> Stream<NamedRecipe<T>> expandMulti(HolderLookup.Provider provider, Identifier id, MultiNamedRecipe<T> multi) {
+    try { return multi.getRecipes(id, provider).stream(); }
+    catch (Exception error) { Mantle.logger.error("Failed to fetch display recipes for {}", id, error); return Stream.empty(); }
+  }
+
+  @SuppressWarnings("unchecked")
+  static <R,T> Stream<NamedRecipe<T>> streamNamedRecipes(Stream<NamedRecipe<R>> recipes, HolderLookup.Provider provider, Class<T> recipeClass) {
+    return recipes.sorted(NAMED_COMPARATOR).flatMap(base -> base.recipe() instanceof MultiNamedRecipe<?> multi
+        ? expandMulti(provider, base.id(), multi) : Stream.of(base))
+      .filter(r -> recipeClass.isInstance(r.recipe())).map(r -> (NamedRecipe<T>)r);
+  }
+
+  static <R,T> List<NamedRecipe<T>> getNamedRecipes(Stream<NamedRecipe<R>> recipes, HolderLookup.Provider provider, Class<T> recipeClass) {
+    return streamNamedRecipes(recipes, provider, recipeClass).toList();
+  }
 }

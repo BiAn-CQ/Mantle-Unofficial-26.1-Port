@@ -50,7 +50,7 @@ public class Loadables {
 
   /** Alias for the resource location loadable as it's a common need */
   public static final StringLoadable<Identifier> RESOURCE_LOCATION = IdentifierLoadable.DEFAULT;
-  public static final StringLoadable<ItemAbility> TOOL_ACTION = StringLoadable.DEFAULT.flatXmap(ItemAbility::get, ItemAbility::name);
+  public static final StringLoadable<ItemAbility> TOOL_ACTION = StringLoadable.DEFAULT.map(ItemAbility::get, ItemAbility::name);
 
   /* Registries */
   public static final IdentifierLoadable<SoundEvent> SOUND_EVENT = new RegistryLoadable<>(BuiltInRegistries.SOUND_EVENT);
@@ -126,12 +126,12 @@ public class Loadables {
 
   /** Creates a tag key loadable */
   public static <T> StringLoadable<TagKey<T>> tagKey(ResourceKey<? extends Registry<T>> registry) {
-    return RESOURCE_LOCATION.flatXmap(key -> TagKey.create(registry, key), TagKey::location);
+    return RESOURCE_LOCATION.map(key -> TagKey.create(registry, key), TagKey::location);
   }
 
   /** Creates a resource key loadable */
   public static <T> StringLoadable<ResourceKey<T>> resourceKey(ResourceKey<? extends Registry<T>> registry) {
-    return RESOURCE_LOCATION.flatXmap(key -> ResourceKey.create(registry, key), ResourceKey::identifier);
+    return RESOURCE_LOCATION.map(key -> ResourceKey.create(registry, key), ResourceKey::identifier);
   }
 
   /** Maps a loadable to a variant that disallows a particular value */
@@ -142,6 +142,6 @@ public class Loadables {
       }
       return value;
     };
-    return loadable.xmap(mapper, mapper);
+    return loadable.mapChecked(mapper, mapper);
   }
 }

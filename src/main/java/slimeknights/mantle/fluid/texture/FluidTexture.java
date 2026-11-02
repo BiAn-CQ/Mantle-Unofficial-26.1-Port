@@ -146,7 +146,7 @@ public final class FluidTexture {
   @SuppressWarnings("unused") // API
   public static class Builder {
 
-    private final FluidType fluid;
+    private final Identifier fluid;
     private Identifier root;
     private Identifier still;
     private Identifier flowing;
@@ -162,7 +162,7 @@ public final class FluidTexture {
     private float fogStart = 0.25f;
     private float fogEnd = 1;
 
-    public Builder(FluidType fluid) {
+    public Builder(Identifier fluid) {
       this.fluid = fluid;
     }
 
@@ -187,8 +187,11 @@ public final class FluidTexture {
      * @param camera  If true, include a camera texture
      * @return Builder instance
      */
+    /** Sets the texture root from the fluid registry ID. */
+    public Builder wrapId(String prefix, String suffix) { return root(JsonHelper.wrap(fluid, prefix, suffix)); }
+
     public Builder wrapId(String prefix, String suffix, boolean overlay, boolean camera) {
-      return textures(JsonHelper.wrap(Objects.requireNonNull(NeoForgeRegistries.FLUID_TYPES.getKey(fluid)), prefix, suffix), overlay, camera);
+      return textures(JsonHelper.wrap(fluid, prefix, suffix), overlay, camera);
     }
 
     /**

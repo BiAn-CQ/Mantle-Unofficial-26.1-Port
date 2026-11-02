@@ -41,13 +41,13 @@ public abstract class FluidIngredient implements IAmLoadable {
   }
   /** Loadable for network writing of fluids, using optional stacks so empty ingredients can be synchronized. */
   private static final Loadable<FluidIngredient> NETWORK = new RegistryCodecLoadable<>(FluidStack.OPTIONAL_CODEC, FluidStack.OPTIONAL_STREAM_CODEC)
-    .list(0).flatXmap(fluids -> FluidIngredient.of(fluids.stream().map(FluidIngredient::of).toList()), FluidIngredient::getAllFluids);
+    .list(0).map(fluids -> FluidIngredient.of(fluids.stream().map(FluidIngredient::of).toList()), FluidIngredient::getAllFluids);
   /** Loadable for fluid matches */
   private static final RecordLoadable<FluidMatch> FLUID_MATCH = RecordLoadable.create(Loadables.FLUID.requiredField("fluid", i -> i.fluid), IntLoadable.FROM_ONE.requiredField("amount", i -> i.amount), FluidIngredient::of);
   /** Loadable for tag matches */
   private static final RecordLoadable<TagMatch> TAG_MATCH = RecordLoadable.create(Loadables.FLUID_TAG.requiredField("tag", i -> i.tag), IntLoadable.FROM_ONE.requiredField("amount", i -> i.amount), FluidIngredient::of);
   /** Loadable for tag matches */
-  private static final Loadable<Compound> COMPOUND = loadableBuilder().build(NETWORK).list(2).flatXmap(Compound::new, c -> c.ingredients);
+  private static final Loadable<Compound> COMPOUND = loadableBuilder().build(NETWORK).list(2).map(Compound::new, c -> c.ingredients);
   /** Loadable for any fluid ingredient */
   private static final Loadable<FluidIngredient> LEGACY_LOADABLE = loadableBuilder().array(COMPOUND).build(NETWORK);
   private static final Loadable<net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient> NATIVE_LOADABLE =

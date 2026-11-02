@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "slimeknights.mantle.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "BlockLootEnchantmentMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

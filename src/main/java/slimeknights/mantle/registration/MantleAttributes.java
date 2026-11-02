@@ -26,8 +26,11 @@ public class MantleAttributes {
   private MantleAttributes() {}
 
   public static void init(IEventBus bus) {
+    ATTRIBUTES.addAlias(Mantle.getResource("generic.knockback_multiplier"), Mantle.getResource("knockback_multiplier"));
+    ATTRIBUTES.addAlias(Mantle.getResource("player.experience_multiplier"), Mantle.getResource("experience_multiplier"));
     ATTRIBUTES.register(bus);
     bus.addListener(EntityAttributeModificationEvent.class, MantleAttributes::addAttributes);
+    net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(net.neoforged.neoforge.event.enchanting.EnchantedEntityLootEvent.class, MantleAttributes::entityEnchantment);
     net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(LivingKnockBackEvent.class, MantleAttributes::onKnockback);
     net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(BlockDropsEvent.class, MantleAttributes::blockDrops);
     net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(LivingExperienceDropEvent.class, MantleAttributes::livingExperienceDrop);
@@ -35,17 +38,24 @@ public class MantleAttributes {
 
   // generic
   /** Multiplier for knockback this entity takes. Similar to {@link Attributes#KNOCKBACK_RESISTANCE} but can be used to increase knockback */
-  public static final DeferredAttribute<PercentageAttribute> KNOCKBACK_MULTIPLIER = ATTRIBUTES.register("generic.knockback_multiplier").sync().negative().multiplier();
+  public static final DeferredAttribute<PercentageAttribute> KNOCKBACK_MULTIPLIER = ATTRIBUTES.register("knockback_multiplier").sync().negative().multiplier();
+
+  /** Integer looting bonus; the fractional part is a chance for one extra level. */
+  public static final DeferredAttribute<net.minecraft.world.entity.ai.attributes.RangedAttribute> LOOTING_BOOST = ATTRIBUTES.register("looting_boost").sync().ranged(0, -255, 255);
+  /** Integer fortune bonus; the fractional part is a chance for one extra level. */
+  public static final DeferredAttribute<net.minecraft.world.entity.ai.attributes.RangedAttribute> FORTUNE_BOOST = ATTRIBUTES.register("fortune_boost").sync().ranged(0, -255, 255);
 
   // player
   /** Multiplier to amount of gained for players. */
-  public static final DeferredAttribute<PercentageAttribute> EXPERIENCE_MULTIPLIER = ATTRIBUTES.register("player.experience_multiplier").multiplier();
+  public static final DeferredAttribute<PercentageAttribute> EXPERIENCE_MULTIPLIER = ATTRIBUTES.register("experience_multiplier").multiplier();
 
 
   @SubscribeEvent
   static void addAttributes(EntityAttributeModificationEvent event) {
     // general attributes
     addToAll(event, KNOCKBACK_MULTIPLIER);
+    addToAll(event, LOOTING_BOOST);
+    addToAll(event, FORTUNE_BOOST);
     // player attributes
     event.add(EntityType.PLAYER, EXPERIENCE_MULTIPLIER);
   }
@@ -85,6 +95,21 @@ public class MantleAttributes {
     Player player = event.getAttackingPlayer();
     if (player != null) {
       event.setDroppedExperience((int) Math.round(event.getDroppedExperience() * player.getAttributeValue(EXPERIENCE_MULTIPLIER)));
+    }
+  }
+  /** Applies a level bonus with unbiased fractional rounding and the vanilla enchantment bounds. */
+  public static int getEnchantmentLevel(LivingEntity entity, net.minecraft.core.Holder<Attribute> attribute, int current) {
+    double value = entity.getAttributeValue(attribute);
+    int level = net.minecraft.util.Mth.floor(value);
+    if (value > level && entity.getRandom().nextFloat() < value - level) ++level;
+    return net.minecraft.util.Mth.clamp(current + level, 0, 255);
+  }
+
+  private static void entityEnchantment(net.neoforged.neoforge.event.enchanting.EnchantedEntityLootEvent event) {
+    var source = event.getDamageSource();
+    if (event.getEnchantment().is(net.minecraft.world.item.enchantment.Enchantments.LOOTING)
+        && source != null && source.getEntity() instanceof LivingEntity attacker) {
+      event.setEnchantmentLevel(getEnchantmentLevel(attacker, LOOTING_BOOST, event.getEnchantmentLevel()));
     }
   }
 }

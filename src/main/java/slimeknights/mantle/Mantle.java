@@ -17,7 +17,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -29,7 +28,6 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig.Type;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import org.apache.logging.log4j.LogManager;
@@ -55,11 +53,11 @@ import slimeknights.mantle.data.predicate.entity.MobTypePredicate;
 import slimeknights.mantle.data.predicate.fluid.FluidPredicate;
 import slimeknights.mantle.data.predicate.fluid.FluidTypePredicate;
 import slimeknights.mantle.data.predicate.item.ItemPredicate;
-import slimeknights.mantle.datagen.MantleBlockTagProvider;
-import slimeknights.mantle.datagen.MantleFluidTagProvider;
-import slimeknights.mantle.datagen.MantleFluidTooltipProvider;
+import slimeknights.mantle.datagen.tag.MantleBlockTagProvider;
+import slimeknights.mantle.datagen.tag.MantleFluidTagProvider;
+import slimeknights.mantle.datagen.client.MantleFluidTooltipProvider;
 import slimeknights.mantle.datagen.MantleFluidTransferProvider;
-import slimeknights.mantle.datagen.MantleMenuTagProvider;
+import slimeknights.mantle.datagen.tag.MantleMenuTagProvider;
 import slimeknights.mantle.datagen.MantleTags;
 import slimeknights.mantle.fluid.transfer.EmptyFluidContainerTransfer;
 import slimeknights.mantle.fluid.transfer.EmptyFluidWithNBTTransfer;
@@ -111,6 +109,7 @@ public class Mantle {
 
   /* Proxies for sides, used for graphics processing */
   public Mantle(IEventBus bus, ModContainer modContainer) {
+    modContainer.registerConfig(net.neoforged.fml.config.ModConfig.Type.COMMON, Config.COMMON_SPEC);
     modContainer.registerConfig(Type.CLIENT, Config.CLIENT_SPEC);
     modContainer.registerConfig(Type.SERVER, Config.SERVER_SPEC);
 
@@ -139,9 +138,6 @@ public class Mantle {
         RecipeType.CAMPFIRE_COOKING, RecipeType.STONECUTTING, RecipeType.SMITHING));
     NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, PlayerInteractEvent.RightClickBlock.class, LecternBookItem::interactWithBlock);
 
-    if (FMLEnvironment.getDist() == Dist.CLIENT) {
-      ClientEvents.onConstruct();
-    }
   }
 
   private void registerCapabilities(RegisterCapabilitiesEvent event) {
@@ -291,12 +287,20 @@ public class Mantle {
     CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
     event.addProvider(new MantleBlockTagProvider(packOutput, lookupProvider));
     event.addProvider(new MantleFluidTagProvider(packOutput, lookupProvider));
+    event.addProvider(new slimeknights.mantle.datagen.tag.MantleItemTagProvider(packOutput, lookupProvider));
     event.addProvider(new MantleMenuTagProvider(packOutput, lookupProvider));
     event.addProvider(new MantleFluidTransferProvider(packOutput, lookupProvider));
   }
 
   private void gatherClientData(final GatherDataEvent.Client event) {
-    event.addProvider(new MantleFluidTooltipProvider(event.getGenerator().getPackOutput()));
+    var output = event.getGenerator().getPackOutput();
+    event.addProvider(new MantleFluidTooltipProvider(output));
+    event.addProvider(new slimeknights.mantle.datagen.client.MantleSpriteSourceProvider(output));
+    var textures = new slimeknights.mantle.datagen.client.MantleFluidTextureProvider(output);
+    event.addProvider(textures);
+    event.addProvider(new slimeknights.mantle.fluid.texture.FluidTextureCameraProvider(output, event.getResourceManager(net.minecraft.server.packs.PackType.CLIENT_RESOURCES), textures));
+    event.addProvider(new slimeknights.mantle.datagen.client.MantleFluidBlockstateModelProvider(output));
+    event.addProvider(new slimeknights.mantle.datagen.client.MantleFluidBucketModelProvider(output));
   }
 
   /**

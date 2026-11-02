@@ -59,14 +59,17 @@ public class FluidContainerTransferManager extends SimpleJsonResourceReloadListe
   public static final FluidContainerTransferManager INSTANCE = new FluidContainerTransferManager();
 
   /** List of loaded transfer logic, only exists serverside */
-  private List<IFluidContainerTransfer> transfers = Collections.emptyList();
+  private List<slimeknights.mantle.recipe.NamedRecipe<IFluidContainerTransfer>> transfers = Collections.emptyList();
 
   /** Set of all items that match a recipe, exists on both sides */
   @Nullable
   private Set<Item> containerItems = Collections.emptySet();
 
-  public void setContainerItems(Set<Item> containerItems) {
-    this.containerItems = containerItems;
+  public List<slimeknights.mantle.recipe.NamedRecipe<IFluidContainerTransfer>> getTransfers() { return transfers; }
+
+  void setTransfers(List<slimeknights.mantle.recipe.NamedRecipe<IFluidContainerTransfer>> transfers) {
+    this.transfers = List.copyOf(transfers);
+    this.containerItems = null;
   }
 
   /** Condition context for tags */
@@ -81,8 +84,8 @@ public class FluidContainerTransferManager extends SimpleJsonResourceReloadListe
     if (this.containerItems == null) {
       List<Item> builder = new ArrayList<>();
       Consumer<Item> consumer = builder::add;
-      for (IFluidContainerTransfer transfer : transfers) {
-        transfer.addRepresentativeItems(consumer);
+      for (var transfer : transfers) {
+        transfer.recipe().addRepresentativeItems(consumer);
       }
       this.containerItems = Set.copyOf(builder);
     }
@@ -95,7 +98,7 @@ public class FluidContainerTransferManager extends SimpleJsonResourceReloadListe
       e.addListener(Mantle.getResource("fluid_transfer"), this);
       this.context = e.getConditionContext();
     });
-    NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, OnDatapackSyncEvent.class, e -> JsonHelper.syncPackets(e, MantleNetwork.INSTANCE, new FluidContainerTransferPacket(this.getContainerItems())));
+    NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, OnDatapackSyncEvent.class, e -> JsonHelper.syncPackets(e, MantleNetwork.INSTANCE, new FluidContainerTransferPacket(transfers)));
   }
 
   /** Loads transfer from JSON */
@@ -116,11 +119,14 @@ public class FluidContainerTransferManager extends SimpleJsonResourceReloadListe
   protected void apply(Map<Identifier,Dynamic<?>> splashList, ResourceManager manager, ProfilerFiller profiler) {
     long time = System.nanoTime();
     this.transfers = splashList.entrySet().stream()
-                               .map(entry -> loadFluidTransfer(entry.getKey(), entry.getValue().convert(JsonOps.INSTANCE).getValue().getAsJsonObject()))
+                               .map(entry -> {
+                                 var transfer = loadFluidTransfer(entry.getKey(), entry.getValue().convert(JsonOps.INSTANCE).getValue().getAsJsonObject());
+                                 return transfer == null ? null : slimeknights.mantle.recipe.NamedRecipe.of(entry.getKey(), transfer);
+                               })
                                .filter(Objects::nonNull)
                                .toList();
     this.containerItems = null;
-    log.info("Loaded {} dynamic modifiers in {} ms", transfers.size(), (System.nanoTime() - time) / 1000000f);
+    log.info("Loaded {} fluid container transfers in {} ms", transfers.size(), (System.nanoTime() - time) / 1000000f);
   }
 
   /**
@@ -144,7 +150,8 @@ public class FluidContainerTransferManager extends SimpleJsonResourceReloadListe
   /** Gets the transfer for the given item and fluid, or null if its not a valid item and fluid */
   @Nullable
   public IFluidContainerTransfer getTransfer(ItemStack stack, FluidStack fluid) {
-    for (IFluidContainerTransfer transfer : transfers) {
+    for (var named : transfers) {
+      var transfer = named.recipe();
       if (transfer.matches(stack, fluid)) {
         return transfer;
       }

@@ -50,4 +50,12 @@ public class EmptyFluidCopyDataTransfer extends EmptyFluidContainerTransfer {
     json.addProperty("type", ID.toString());
     return json;
   }
+
+  private List<FluidStack> resultFluids;
+  @Override public List<FluidStack> resultFluids() {
+    if (resultFluids == null) resultFluids = inputItems().stream()
+      .map(item -> DataComponentHelper.copy(fluid.copy(), item, copyComponents)).toList();
+    return resultFluids;
+  }
+  @Override public List<SlotLink> linkedSlots() { return List.of(SlotLink.INPUT_ITEMS, SlotLink.RESULT_FLUIDS); }
 }

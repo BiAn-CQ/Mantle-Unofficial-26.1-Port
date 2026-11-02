@@ -127,7 +127,7 @@ class RegistryCodecLoadableTest {
   @Test
   void nestedRecordsCollectionsAndMappedValuesPreserveRegistryContext() {
     World world = world();
-    Loadable<Value> value = HOLDER.flatXmap(Value::new, Value::holder);
+    Loadable<Value> value = HOLDER.map(Value::new, Value::holder);
     RecordLoadable<Nested> nested = RecordLoadable.create(
       value.list(1).requiredField("list", Nested::list),
       new MapLoadable<>(StringLoadable.DEFAULT, value, 1).requiredField("map", Nested::map),

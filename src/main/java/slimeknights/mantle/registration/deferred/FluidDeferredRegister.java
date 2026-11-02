@@ -243,9 +243,9 @@ public class FluidDeferredRegister extends DeferredRegisterWrapper<Fluid> {
       Properties props = build(type, stillDelayed, flowingDelayed);
 
       // create fluids now that we have props
-      Supplier<F> still = registerFluid(name, () -> createStill.apply(props));
+      DeferredHolder<Fluid,F> still = registerFluid(name, () -> createStill.apply(props));
       stillDelayed.setSupplier(() -> still.get());
-      Supplier<F> flowing = registerFluid("flowing_" + name, () -> createFlowing.apply(props));
+      DeferredHolder<Fluid,F> flowing = registerFluid("flowing_" + name, () -> createFlowing.apply(props));
       flowingDelayed.setSupplier(() -> flowing.get());
 
       // return the final nice object

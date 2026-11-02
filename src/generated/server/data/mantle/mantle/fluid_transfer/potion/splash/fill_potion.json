@@ -14,7 +14,14 @@
   "copy": "minecraft:potion_contents",
   "fluid": {
     "amount": 250,
-    "tag": "c:potion"
+    "ingredient": {
+      "neoforge:ingredient_type": "mantle:potion",
+      "fluids": "#c:potion",
+      "potion": {
+        "type": "neoforge:not",
+        "value": "minecraft:water"
+      }
+    }
   },
   "input": "#c:bottles/splash",
   "result": {

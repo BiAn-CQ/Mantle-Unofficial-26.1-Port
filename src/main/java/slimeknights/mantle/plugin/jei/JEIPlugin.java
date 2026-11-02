@@ -48,6 +48,37 @@ public class JEIPlugin implements IModPlugin {
     registration.register(MantleJEIConstants.ENTITY_TYPE, Collections.emptyList(), new EntityIngredientHelper(), new EntityIngredientRenderer(16), ENTITY_CODEC);
   }
 
+  @Override
+  public void registerCategories(mezz.jei.api.registration.IRecipeCategoryRegistration registration) {
+    if (MantleJEIConstants.isTransferTabEnabled()) registration.addRecipeCategories(
+      new slimeknights.mantle.plugin.jei.fluid.FluidContainerTransferCategory(registration.getJeiHelpers().getGuiHelper()));
+  }
+
+  @Override
+  public void registerItemSubtypes(mezz.jei.api.registration.ISubtypeRegistration registration) {
+    if (slimeknights.mantle.fluid.MantleFluids.potion.isBound()) registration.registerSubtypeInterpreter(
+      slimeknights.mantle.fluid.MantleFluids.potion.asItem(), new slimeknights.mantle.plugin.jei.fluid.PotionSubtypeInterpreter<>());
+  }
+
+  @Override
+  public <T> void registerFluidSubtypes(mezz.jei.api.registration.ISubtypeRegistration registration, mezz.jei.api.helpers.IPlatformFluidHelper<T> helper) {
+    if (slimeknights.mantle.fluid.MantleFluids.potion.isBound()) registration.registerSubtypeInterpreter(
+      mezz.jei.api.neoforge.NeoForgeTypes.FLUID_STACK, slimeknights.mantle.fluid.MantleFluids.potion.get(), new slimeknights.mantle.plugin.jei.fluid.PotionSubtypeInterpreter<>());
+  }
+
+  @Override
+  public void onRuntimeAvailable(mezz.jei.api.runtime.IJeiRuntime runtime) {
+    if (!slimeknights.mantle.fluid.MantleFluids.potion.isBound()) return;
+    var manager = runtime.getIngredientManager();
+    var fluid = slimeknights.mantle.fluid.MantleFluids.potion.get();
+    manager.removeIngredientsAtRuntime(mezz.jei.api.neoforge.NeoForgeTypes.FLUID_STACK,
+      List.of(new net.neoforged.neoforge.fluids.FluidStack(fluid, 1000)));
+    if (slimeknights.mantle.config.Config.SHOW_POTION_FLUID_IN_JEI.getAsBoolean()) manager.addIngredientsAtRuntime(
+      mezz.jei.api.neoforge.NeoForgeTypes.FLUID_STACK, java.util.stream.StreamSupport.stream(BuiltInRegistries.POTION.asHolderIdMap().spliterator(), false)
+        .filter(potion -> !potion.equals(net.minecraft.world.item.alchemy.Potions.WATER) && !potion.is(slimeknights.mantle.datagen.MantleTags.Potions.HIDDEN_FLUID))
+        .map(potion -> slimeknights.mantle.fluid.PotionFluidType.potionFluid(potion, 1000)).toList());
+  }
+
   private static <I extends RecipeInput, R extends Recipe<I>> void addMultiRecipes(IRecipeRegistration registration, RegistryAccess access,
                                                                                  RecipeMap recipes, RecipeType<R> type, IRecipeHolderType<R> jeiType) {
     List<RecipeHolder<R>> expanded = IMultiRecipe.getMultiRecipeHolders(access, recipes, type).toList();
@@ -71,6 +102,12 @@ public class JEIPlugin implements IModPlugin {
     addMultiRecipes(registration, access, recipes, RecipeType.CAMPFIRE_COOKING, RecipeTypes.CAMPFIRE_COOKING);
     addMultiRecipes(registration, access, recipes, RecipeType.STONECUTTING, RecipeTypes.STONECUTTING);
     addMultiRecipes(registration, access, recipes, RecipeType.SMITHING, RecipeTypes.SMITHING);
+    if (MantleJEIConstants.isTransferTabEnabled()) {
+      registration.addRecipes(MantleJEIConstants.FLUID_TRANSFER, slimeknights.mantle.recipe.MultiNamedRecipe.getNamedRecipes(
+        slimeknights.mantle.fluid.transfer.FluidContainerTransferManager.INSTANCE.getTransfers().stream(), access,
+        slimeknights.mantle.fluid.transfer.IDisplayFluidTransfer.class));
+      registration.addRecipes(MantleJEIConstants.FLUID_TRANSFER, slimeknights.mantle.plugin.jei.fluid.FluidContainerTransferCategory.generateRecipes());
+    }
   }
 
   @Override

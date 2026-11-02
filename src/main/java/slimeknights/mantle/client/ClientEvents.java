@@ -100,9 +100,6 @@ public class ClientEvents {
   private static final Identifier HOTBAR_ATTACK_BACKGROUND = Identifier.withDefaultNamespace("hud/hotbar_attack_indicator_background");
   private static final Identifier HOTBAR_ATTACK_PROGRESS = Identifier.withDefaultNamespace("hud/hotbar_attack_indicator_progress");
 
-  /** Called on construct to initiatlize things that need early entry */
-  public static void onConstruct() {}
-
   @SuppressWarnings("ConstantConditions")
   @SubscribeEvent
   static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -118,6 +115,7 @@ public class ClientEvents {
   @SubscribeEvent
   static void registerItemModels(RegisterItemModelsEvent event) {
     event.register(slimeknights.mantle.client.model.ItemKeyModel.ID, slimeknights.mantle.client.model.ItemKeyModel.Unbaked.MAP_CODEC);
+    event.register(slimeknights.mantle.client.model.FluidContainerModel.ID, slimeknights.mantle.client.model.FluidContainerModel.Unbaked.MAP_CODEC);
     event.register(Mantle.getResource("item_layer"), NativeMantleItemModel.ItemLayerUnbaked.MAP_CODEC);
     event.register(Mantle.getResource("custom_data_key"), NativeMantleItemModel.CustomDataKeyUnbaked.MAP_CODEC);
   }
@@ -154,7 +152,9 @@ public class ClientEvents {
   @SubscribeEvent
   static void registerClientExtensions(RegisterClientExtensionsEvent event) {
     NeoForgeRegistries.FLUID_TYPES.stream().forEach(type -> {
-      if (type instanceof InvertedFluidType) {
+      if (type instanceof slimeknights.mantle.fluid.PotionFluidType) {
+        event.registerFluidType(new slimeknights.mantle.fluid.texture.ClientPotionFluidType(type), type);
+      } else if (type instanceof InvertedFluidType) {
         event.registerFluidType(new ClientInvertedFluidType(type), type);
       } else if (type instanceof TextureFluidType) {
         event.registerFluidType(new ClientTextureFluidType(type), type);
@@ -168,6 +168,12 @@ public class ClientEvents {
 
     BookLoader.registerBook(Mantle.getResource("test"), new FileRepository(Mantle.getResource("books/test")));
     MantleClientCommand.init();
+    if (slimeknights.mantle.fluid.MantleFluids.potion.isBound()) {
+      FluidTextureManager.registerTintSource(slimeknights.mantle.fluid.MantleFluids.potion.getType(), slimeknights.mantle.fluid.texture.ClientPotionFluidType.TINT);
+    }
+    if (slimeknights.mantle.fluid.MantleFluids.honey.isBound()) {
+      FluidTextureManager.registerTranslucent(slimeknights.mantle.fluid.MantleFluids.honey.getType());
+    }
   }
 
   @SubscribeEvent
