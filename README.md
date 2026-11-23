@@ -8,7 +8,9 @@ Tinkers' Construct Unofficial 26.1 Port 及其他依赖 Mantle 的模组提供�
 - Minecraft `26.1.2`
 - NeoForge `26.1.2.95` 或更高的 26.1.2 兼容版本
 - Java `25`
-- JEI `29.21.0` 或更高版本（可选）
+- JEI `29.43.0.107` 或更高版本（可选）
+
+安装上述 JEI 时，NeoForge 至少需要 `26.1.2.99`。
 
 ## 构建与测试
 

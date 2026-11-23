@@ -11,6 +11,8 @@ import slimeknights.mantle.util.TranslationHelper;
 
 import java.util.function.Consumer;
 
+/** @deprecated use the explicit fixed or optional tooltip types. */
+@Deprecated(forRemoval = true)
 public class BlockTooltipItem extends BlockItem {
   public BlockTooltipItem(Block blockIn, Item.Properties builder) {
     super(blockIn, builder);

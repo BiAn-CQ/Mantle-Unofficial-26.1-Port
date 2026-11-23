@@ -1,0 +1,30 @@
+package slimeknights.mantle.item.tooltip;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import slimeknights.mantle.util.TranslationHelper;
+
+import java.util.List;
+import java.util.function.Consumer;
+import net.minecraft.world.item.component.TooltipDisplay;
+
+/**
+ * Item with automatic optional tooltip support.
+ * @see TranslationHelper#addOptionalTooltip(ItemStack, List)
+ * @see FixedTooltipItem
+ * @see StackTooltipItem
+ * @see OptionalTooltipBlockItem
+ */
+public class OptionalTooltipItem extends Item {
+  public OptionalTooltipItem(Properties properties) {
+    super(properties);
+  }
+
+  @Override
+  public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display, Consumer<Component> tooltip, TooltipFlag flagIn) {
+    TranslationHelper.addOptionalTooltip(stack, tooltip);
+    super.appendHoverText(stack, context, display, tooltip, flagIn);
+  }
+}

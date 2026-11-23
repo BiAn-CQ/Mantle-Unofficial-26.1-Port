@@ -16,7 +16,7 @@ import java.lang.reflect.Type;
 public final class IdentifierSerializer implements JsonDeserializer<Identifier>, JsonSerializer<Identifier> {
   private final String modId;
 
-  private IdentifierSerializer(String modId) {
+  public IdentifierSerializer(String modId) {
     this.modId = modId;
   }
 

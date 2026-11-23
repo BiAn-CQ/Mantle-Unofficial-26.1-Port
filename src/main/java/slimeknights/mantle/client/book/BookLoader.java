@@ -111,7 +111,7 @@ public class BookLoader implements ResourceManagerReloadListener {
     StringActionProcessor.registerProtocol(Mantle.getResource("go-to-page-rtn"), new ProtocolGoToPage(true));
 
     // Register GSON type adapters
-    registerGsonTypeAdapter(Identifier.class, IdentifierSerializer.resourceLocation("mantle"));
+    registerGsonTypeAdapter(Identifier.class, new IdentifierSerializer(Mantle.modId));
     registerGsonTypeAdapter(int.class, new HexStringDeserializer());
     registerGsonTypeAdapter(ICondition.class, new ConditionDeserializer());
     registerGsonTypeAdapter(IngredientData.class, new IngredientData.Deserializer());

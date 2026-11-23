@@ -21,6 +21,7 @@ public abstract class BlockTagProviderExtension extends BlockTagsProvider {
     private final TagAppender<Block,Block> delegate;
     protected BlockItemTagAppender(TagAppender<Block,Block> delegate) { this.delegate=delegate; }
     public BlockItemTagAppender addTag(BlockItemTagKey tag) { return addTag(tag.block()); }
+    public BlockItemTagAppender addTags(BlockItemTagKey... tags) { for (var tag : tags) addTag(tag); return this; }
     @Override public BlockItemTagAppender add(Block block) { delegate.add(block); return this; }
     @Override public BlockItemTagAppender addOptional(Block block) { delegate.addOptional(block); return this; }
     @Override public BlockItemTagAppender addTag(TagKey<Block> tag) { delegate.addTag(tag); return this; }

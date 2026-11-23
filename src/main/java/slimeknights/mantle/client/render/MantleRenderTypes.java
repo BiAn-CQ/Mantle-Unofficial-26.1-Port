@@ -19,10 +19,11 @@ import slimeknights.mantle.Mantle;
 public final class MantleRenderTypes {
   private MantleRenderTypes() {}
 
-  /** Render type used for fluid cuboids with block-atlas textures and a lightmap. */
-  public static final RenderType FLUID = RenderType.create(
-    Mantle.modId + ":fluid",
-    blockAtlasSetup(RenderPipelines.TRANSLUCENT_BLOCK, true, false));
+  public static final RenderType ENTITY_CUTOUT_NO_CULL = net.minecraft.client.renderer.rendertype.RenderTypes.entityCutout(TextureAtlas.LOCATION_BLOCKS, true);
+  public static final RenderType ENTITY_TRANSLUCENT_NO_CULL = net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent(TextureAtlas.LOCATION_BLOCKS, true);
+  /** @deprecated choose the native render type using FluidRenderer.getRenderType. */
+  @Deprecated
+  public static final RenderType FLUID = ENTITY_TRANSLUCENT_NO_CULL;
 
   /** Render type used for the structure renderer. */
   public static final RenderPipeline TRANSLUCENT_FULLBRIGHT_PIPELINE = RenderPipeline.builder(RenderPipelines.BLOCK_SNIPPET)

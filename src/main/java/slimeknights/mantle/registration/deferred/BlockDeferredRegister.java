@@ -65,11 +65,20 @@ import java.util.function.Supplier;
  * Deferred register to handle registering blocks with possible item forms
  */
 @SuppressWarnings({"WeakerAccess", "unused"})
-public class BlockDeferredRegister extends DeferredRegisterWrapper<Block> {
+public class BlockDeferredRegister extends DeferredRegisterWrapper<Block> implements BlockItemBuilder<BlockDeferredRegister> {
   /** Registry key of the block supplier currently being evaluated. */
   private static final ThreadLocal<ResourceKey<Block>> CURRENT_BLOCK_ID = new ThreadLocal<>();
 
   protected final SynchronizedDeferredRegister<Item> itemRegister;
+  private Function<? super Block,? extends BlockItem> blockItem = BLOCK_ITEM;
+  @Override public BlockDeferredRegister blockItem(Function<? super Block,? extends BlockItem> item) {
+    this.blockItem = java.util.Objects.requireNonNull(item);
+    return this;
+  }
+  public Function<? super Block,? extends BlockItem> blockItem() { return blockItem; }
+  public <B extends Block> ItemObject<B> register(String name, Supplier<? extends B> block) { return register(name, block, blockItem); }
+  public ItemObject<Block> register(String name, BlockBehaviour.Properties properties) { return register(name, properties, blockItem); }
+
   public BlockDeferredRegister(String modID) {
     super(DeferredRegister.createBlocks(modID), modID);
     this.itemRegister = SynchronizedDeferredRegister.create(DeferredRegister.createItems(modID));

@@ -2,7 +2,10 @@
   "model": {
     "type": "mantle:fluid_container",
     "parent": "neoforge:item/bucket_drip",
-    "fluid": "mantle:beetroot_soup",
+    "fluid": {
+      "name": "mantle:beetroot_soup",
+      "optional": true
+    },
     "flip_gas": false
   }
 }

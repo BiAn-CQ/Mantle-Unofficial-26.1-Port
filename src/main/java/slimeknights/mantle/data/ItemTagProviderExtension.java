@@ -46,4 +46,22 @@ public abstract class ItemTagProviderExtension extends IntrinsicHolderTagsProvid
   }
   protected void copy(BlockItemTagKey tags) { copy(tags.block(),tags.item()); }
   protected void copy(BlockItemTagKey... tags) { for (var pair:tags) { copy(pair); } }
+  @Override protected BlockItemTagAppender tag(TagKey<Item> tag) { return new BlockItemTagAppender(super.tag(tag)); }
+  protected BlockItemTagAppender tag(BlockItemTagKey tag) { return tag(tag.item()); }
+
+  public static class BlockItemTagAppender implements net.minecraft.data.tags.TagAppender<Item,Item> {
+    private final net.minecraft.data.tags.TagAppender<Item,Item> delegate;
+    protected BlockItemTagAppender(net.minecraft.data.tags.TagAppender<Item,Item> delegate) { this.delegate = delegate; }
+    public BlockItemTagAppender addTag(BlockItemTagKey tag) { return addTag(tag.item()); }
+    public BlockItemTagAppender addTags(BlockItemTagKey... tags) { for (var tag : tags) addTag(tag); return this; }
+    @Override public BlockItemTagAppender add(Item item) { delegate.add(item); return this; }
+    @Override public BlockItemTagAppender addOptional(Item item) { delegate.addOptional(item); return this; }
+    @Override public BlockItemTagAppender addTag(TagKey<Item> tag) { delegate.addTag(tag); return this; }
+    @Override public BlockItemTagAppender addOptionalTag(TagKey<Item> tag) { delegate.addOptionalTag(tag); return this; }
+    @Override public BlockItemTagAppender add(TagEntry entry) { delegate.add(entry); return this; }
+    @Override public BlockItemTagAppender replace(boolean replace) { delegate.replace(replace); return this; }
+    @Override public BlockItemTagAppender remove(Item item) { delegate.remove(item); return this; }
+    @Override public BlockItemTagAppender remove(TagKey<Item> tag) { delegate.remove(tag); return this; }
+  }
+
 }

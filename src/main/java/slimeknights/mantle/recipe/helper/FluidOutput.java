@@ -73,6 +73,11 @@ public abstract class FluidOutput extends StackOutput<Fluid,FluidStack> {
     return get().copy();
   }
 
+  /** Creates an independent copy with the requested amount and the same components. */
+  public final FluidStack copyWithAmount(int amount) {
+    return get().copyWithAmount(amount);
+  }
+
   /**
    * Gets the size of the fluid. Equivelent to {@link #get()} then {@link FluidStack#getAmount()} but saves resolving the fluid.
    */

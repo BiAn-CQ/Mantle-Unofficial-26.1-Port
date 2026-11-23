@@ -22,6 +22,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import net.neoforged.neoforge.common.conditions.ConditionalOps;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import net.minecraft.core.Registry;
 import org.jetbrains.annotations.Contract;
@@ -47,6 +48,30 @@ import java.util.function.Function;
 @SuppressWarnings("unused")
 public class JsonHelper {
   private JsonHelper() {}
+
+  /** Standard NeoForge key for data pack conditions. */
+  public static final String CONDITIONS_KEY = ConditionalOps.DEFAULT_CONDITIONS_KEY;
+
+  /** Writes conditions under the standard key when present. */
+  @Contract("_,_->param1")
+  public static JsonObject serializeConditions(JsonObject json, ICondition... conditions) {
+    return serializeConditions(json, List.of(conditions));
+  }
+
+  /** Writes conditions under the standard key when present. */
+  @Contract("_,_->param1")
+  public static JsonObject serializeConditions(JsonObject json, List<ICondition> conditions) {
+    return serializeConditions(JsonOps.INSTANCE, json, conditions);
+  }
+
+  /** Writes conditions with the caller's registry context. */
+  @Contract("_,_,_->param2")
+  public static JsonObject serializeConditions(com.mojang.serialization.DynamicOps<JsonElement> ops, JsonObject json, List<ICondition> conditions) {
+    if (!conditions.isEmpty()) {
+      ICondition.writeConditions(ops, json, conditions);
+    }
+    return json;
+  }
 
   public static JsonElement serializeConditions(ICondition... conditions) {
     return ICondition.LIST_CODEC.encodeStart(JsonOps.INSTANCE, List.of(conditions)).getOrThrow();
@@ -456,6 +481,11 @@ public class JsonHelper {
   @SafeVarargs
   public static <O,T> JsonArray serializeArray(com.mojang.serialization.DynamicOps<O> ops, Codec<T> codec, T... values) {
     return serializeList(ops, codec, java.util.Arrays.asList(values));
+  }
+
+  /** Checks the conditions under the standard NeoForge key. */
+  public static boolean processConditions(JsonObject json, ICondition.IContext context) {
+    return processConditions(json, CONDITIONS_KEY, context);
   }
 
   public static boolean processConditions(JsonObject json, String member, net.neoforged.neoforge.common.conditions.ICondition.IContext context) {

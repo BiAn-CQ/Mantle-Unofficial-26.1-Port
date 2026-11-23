@@ -31,6 +31,7 @@ import slimeknights.mantle.util.ItemLayerPixels;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Native 26.1 bridge for Mantle's data-driven item layer loaders.
@@ -166,14 +167,19 @@ public final class NativeMantleItemModel implements ItemModel {
 
   /** Selects an item texture from a string stored in the stack's custom-data component. */
   public record CustomDataKeyUnbaked(Identifier parent, Map<String, Material> textures,
-                                     String customDataKey) implements ItemModel.Unbaked {
+                                     String customDataKey, Optional<Identifier> extraTexturesKey) implements ItemModel.Unbaked {
     public static final MapCodec<CustomDataKeyUnbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
       Identifier.CODEC.optionalFieldOf("parent", Identifier.withDefaultNamespace("item/generated"))
         .forGetter(CustomDataKeyUnbaked::parent),
       Codec.unboundedMap(Codec.STRING, Material.CODEC).optionalFieldOf("textures", Map.of())
         .forGetter(CustomDataKeyUnbaked::textures),
-      Codec.STRING.fieldOf("custom_data_key").forGetter(CustomDataKeyUnbaked::customDataKey)
+      Codec.STRING.fieldOf("custom_data_key").forGetter(CustomDataKeyUnbaked::customDataKey),
+      Identifier.CODEC.optionalFieldOf("extra_textures_key").forGetter(CustomDataKeyUnbaked::extraTexturesKey)
     ).apply(instance, CustomDataKeyUnbaked::new));
+
+    public CustomDataKeyUnbaked(Identifier parent, Map<String,Material> textures, String customDataKey) {
+      this(parent, textures, customDataKey, Optional.empty());
+    }
 
     @Override
     public void resolveDependencies(Resolver resolver) {
@@ -182,12 +188,13 @@ public final class NativeMantleItemModel implements ItemModel {
 
     @Override
     public ItemModel bake(BakingContext context, Matrix4fc transformation) {
-      Material defaultTexture = textures.get("default");
+      Map<String,Material> allTextures = ItemKeyModel.getTextures(textures, extraTexturesKey);
+      Material defaultTexture = allTextures.get("default");
       Map<String, Material> fallbackTextures = defaultTexture == null
         ? Map.of() : Map.of("layer0", defaultTexture);
       ItemModel fallback = bakeLayers(context, transformation, parent, fallbackTextures, List.of());
       Map<String, ItemModel> variants = new java.util.HashMap<>();
-      for (Map.Entry<String, Material> entry : textures.entrySet()) {
+      for (Map.Entry<String, Material> entry : allTextures.entrySet()) {
         if (!entry.getKey().equals("default")) {
           variants.put(entry.getKey(), bakeLayers(context, transformation, parent,
             Map.of("layer0", entry.getValue()), List.of()));

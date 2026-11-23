@@ -97,7 +97,7 @@ public class MantleFluidTransferProvider extends AbstractFluidContainerTransferP
       new net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient(
         slimeknights.mantle.recipe.ingredient.fluid.PotionFluidIngredient.ofPotions(
           new net.neoforged.neoforge.registries.holdersets.NotHolderSet<>(BuiltInRegistries.POTION, HolderSet.direct(Potions.WATER))),
-        MantleValues.BOTTLE), List.of(DataComponents.POTION_CONTENTS)),
+        MantleValues.BOTTLE)),
       potionConditions);
     // water bottles are 1/3 of a bucket, to prevent water dupes we round up on fill and down on empty, hence fill being 500mb
     // we can always fill water bottles, not always fill splash and lingering

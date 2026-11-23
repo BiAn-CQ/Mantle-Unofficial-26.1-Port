@@ -36,6 +36,12 @@ public class ContainerFoodItem extends Item {
   }
 
   @Override
+  public void appendHoverText(ItemStack stack, Item.TooltipContext context, net.minecraft.world.item.component.TooltipDisplay display, java.util.function.Consumer<net.minecraft.network.chat.Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+    super.appendHoverText(stack, context, display, tooltip, flag);
+    EdibleItem.addEffectTooltip(stack, context, tooltip);
+  }
+
+  @Override
   public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity living) {
     ItemStackTemplate remainder = stack.getCraftingRemainder();
     ItemStack container = remainder == null ? ItemStack.EMPTY : remainder.create();

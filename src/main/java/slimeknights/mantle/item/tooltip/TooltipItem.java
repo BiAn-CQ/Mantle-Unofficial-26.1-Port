@@ -12,6 +12,8 @@ import java.util.function.Consumer;
 /**
  * Item with automatic tooltip support
  */
+/** @deprecated use the explicit fixed or optional tooltip types. */
+@Deprecated(forRemoval = true)
 public class TooltipItem extends Item {
 
   public TooltipItem(Properties properties) {

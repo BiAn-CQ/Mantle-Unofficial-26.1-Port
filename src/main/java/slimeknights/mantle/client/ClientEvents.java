@@ -138,10 +138,11 @@ public class ClientEvents {
     ResourceColorManager.init(event);
     FluidTooltipHandler.init(event);
     FluidTextureManager.init(event);
-    event.addListener(Mantle.getResource("fluid_cuboids"), FluidCuboid.REGISTRY);
+    event.addListener(Mantle.getResource("fluid_models"), slimeknights.mantle.client.render.FluidModel.REGISTRY);
     event.addListener(Mantle.getResource("render_items"), RenderItem.REGISTRY);
     event.addListener(Mantle.getResource("render_item_states"), RenderItem.STATE_REGISTRY);
     event.addListener(Mantle.getResource("texture_colors"), TextureColorHelper.RELOAD_LISTENER);
+    event.addListener(Mantle.getResource("texture_maps"), slimeknights.mantle.client.model.TextureMapManager.INSTANCE);
   }
 
   @SubscribeEvent

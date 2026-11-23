@@ -119,6 +119,17 @@ public class RegistryHelper {
     return () -> registry.get(registry.getId(entry)).orElseThrow().value();
   }
 
+  /** Gets the registry holder for a value in any registry. */
+  public static <T> Holder.Reference<T> getHolder(net.minecraft.core.Registry<T> registry, T entry) {
+    return registry.get(registry.getId(entry)).orElseThrow();
+  }
+
+  /** Creates a holder set from registry values. */
+  @SafeVarargs
+  public static <T> HolderSet<T> holderSet(net.minecraft.core.Registry<T> registry, T... entries) {
+    return HolderSet.direct(entry -> registry.get(registry.getId(entry)).orElseThrow(), entries);
+  }
+
   /** Checks whether entity values match a tag in both contents and display order. */
   public static boolean isTagEquivalent(HolderSet.Named<EntityType<?>> tag, List<EntityType<?>> values) {
     if (tag.size() != values.size()) {

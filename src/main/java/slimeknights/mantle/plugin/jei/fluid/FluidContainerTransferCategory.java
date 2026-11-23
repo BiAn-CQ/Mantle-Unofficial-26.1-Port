@@ -10,7 +10,6 @@ import mezz.jei.api.recipe.IFocusGroup;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -160,8 +159,7 @@ public class FluidContainerTransferCategory extends NamedRecipeCategory<IDisplay
         new EmptyPotionTransfer(Ingredient.of(MantleFluids.potion), ItemOutput.fromItem(Items.BUCKET), FluidType.BUCKET_VOLUME)));
       recipes.add(NamedRecipe.of(id.withSuffix("/filling"), List.of(), new FillFluidCopyDataTransfer(
         Ingredient.of(Items.BUCKET), ItemOutput.fromItem(MantleFluids.potion),
-        new SizedFluidIngredient(PotionFluidIngredient.of(new NotHolderSet<>(BuiltInRegistries.POTION, HolderSet.direct(Potions.WATER)), Tags.Fluids.POTION), FluidType.BUCKET_VOLUME),
-        List.of(DataComponents.POTION_CONTENTS))));
+        new SizedFluidIngredient(PotionFluidIngredient.of(new NotHolderSet<>(BuiltInRegistries.POTION, HolderSet.direct(Potions.WATER)), Tags.Fluids.POTION), FluidType.BUCKET_VOLUME))));
     }
     return List.copyOf(recipes);
   }

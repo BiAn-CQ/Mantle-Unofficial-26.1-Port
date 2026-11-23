@@ -61,7 +61,8 @@ public class EmptyPotionTransfer extends EmptyFluidContainerTransfer {
     return TagPreference.getPreference(net.neoforged.neoforge.common.Tags.Fluids.POTION)
       .map(value -> {
         FluidStack result = new FluidStack(value, fluid.getAmount());
-        return DataComponentHelper.copy(result, stack, DataComponents.POTION_CONTENTS);
+        result.applyComponents(stack.getComponentsPatch());
+        return result;
       })
       .orElse(FluidStack.EMPTY);
   }

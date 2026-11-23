@@ -15,7 +15,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -105,8 +104,10 @@ public class FluidContainerTransferManager extends SimpleJsonResourceReloadListe
   @Nullable
   private IFluidContainerTransfer loadFluidTransfer(Identifier key, JsonObject json) {
     try (IngredientLoadable.Scope ignored = IngredientLoadable.pushOps(new ConditionalOps<>(getRegistryLookup().createSerializationContext(JsonOps.INSTANCE), context))) {
-      String conditions = json.has(ConditionalOps.DEFAULT_CONDITIONS_KEY) ? ConditionalOps.DEFAULT_CONDITIONS_KEY : "conditions";
-      if (!json.has(conditions) || JsonHelper.deserializeConditions(GsonHelper.getAsJsonArray(json, conditions)).stream().allMatch(condition -> condition.test(context))) {
+      // Keep supporting existing datapacks that used the old Mantle key.
+      boolean enabled = json.has(JsonHelper.CONDITIONS_KEY)
+        ? JsonHelper.processConditions(json, context) : JsonHelper.processConditions(json, "conditions", context);
+      if (enabled) {
         return IFluidContainerTransfer.LOADER.deserialize(json, slimeknights.mantle.data.loadable.field.ContextKey.currentContext());
       }
     } catch (JsonParseException | IllegalArgumentException e) {

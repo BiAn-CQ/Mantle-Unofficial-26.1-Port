@@ -171,7 +171,7 @@ public abstract class EntityIngredient implements Predicate<EntityType<?>>, IAmL
   }
 
   /** Gets the list of eggs matching this ingredient, used for focus links in JEI */
-  public List<ItemStack> getEggs() {
+  public List<ItemStack> getDisplayEggs() {
     if (eggs == null) {
       // use getDisplay to guarantee order is the same, just in case
       eggs = getDisplay().stream()
@@ -179,6 +179,12 @@ public abstract class EntityIngredient implements Predicate<EntityType<?>>, IAmL
         .toList();
     }
     return eggs;
+  }
+
+  /** @deprecated use {@link #getDisplayEggs()}. */
+  @Deprecated
+  public List<ItemStack> getEggs() {
+    return getDisplayEggs();
   }
 
 

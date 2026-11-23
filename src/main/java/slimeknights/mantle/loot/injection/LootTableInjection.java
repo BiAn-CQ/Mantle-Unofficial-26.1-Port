@@ -28,7 +28,7 @@ public record LootTableInjection(Identifier name, List<LootPoolInjection> pools)
 
   public record LootPoolInjection(String name, List<LootPoolEntryContainer> entries) {
     public static final Codec<LootPoolInjection> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-      Codec.STRING.fieldOf("name").forGetter(LootPoolInjection::name),
+      net.minecraft.util.ExtraCodecs.NON_EMPTY_STRING.fieldOf("name").forGetter(LootPoolInjection::name),
       LootPoolEntries.CODEC.listOf(1, Integer.MAX_VALUE).fieldOf("entries").forGetter(LootPoolInjection::entries)
     ).apply(instance, LootPoolInjection::new));
 

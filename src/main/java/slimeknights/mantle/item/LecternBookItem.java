@@ -14,7 +14,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 /**
  * Book item that can be placed on lecterns
  */
-public abstract class LecternBookItem extends TooltipItem implements ILecternBookItem {
+public abstract class LecternBookItem extends slimeknights.mantle.item.tooltip.OptionalTooltipItem implements ILecternBookItem {
   public LecternBookItem(Properties properties) {
     super(properties);
   }

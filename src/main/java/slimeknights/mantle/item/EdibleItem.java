@@ -10,6 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
+import net.minecraft.world.item.component.Consumable;
 import net.minecraft.world.item.consume_effects.ApplyStatusEffectsConsumeEffect;
 import slimeknights.mantle.util.TranslationHelper;
 
@@ -27,13 +28,22 @@ public class EdibleItem extends Item {
   public static void addEffectTooltip(ItemStack stack, TooltipContext context, Consumer<Component> tooltip) {
     var consumable=stack.get(DataComponents.CONSUMABLE);
     if (consumable==null) { return; }
-    float ticksPerSecond=context.level()==null ? 20 : context.level().tickRateManager().tickrate();
+    addEffectTooltip(consumable, context, tooltip);
+  }
+
+  /** Adds effects without an item stack; 26.1 stores food effects in Consumable. */
+  public static void addEffectTooltip(Consumable consumable, TooltipContext context, List<Component> tooltip) {
+    addEffectTooltip(consumable, context, tooltip::add);
+  }
+
+  public static void addEffectTooltip(Consumable consumable, TooltipContext context, Consumer<Component> tooltip) {
+    float ticksPerSecond=context.tickRate();
     for (var consumeEffect:consumable.onConsumeEffects()) {
       if (consumeEffect instanceof ApplyStatusEffectsConsumeEffect effect) {
         for (MobEffectInstance instance:effect.effects()) {
           MutableComponent text=Component.translatable(instance.getDescriptionId());
           if (instance.getAmplifier()>0) { text=Component.translatable("potion.withAmplifier",text,Component.translatable("potion.potency."+instance.getAmplifier())); }
-          if (instance.getDuration()>20) { text=Component.translatable("potion.withDuration",text,MobEffectUtil.formatDuration(instance,1,ticksPerSecond)); }
+          if (instance.getDuration()>ticksPerSecond) { text=Component.translatable("potion.withDuration",text,MobEffectUtil.formatDuration(instance,1,ticksPerSecond)); }
           tooltip.accept(text.withStyle(instance.getEffect().value().getCategory().getTooltipFormatting()));
         }
       }

@@ -19,6 +19,17 @@ public final class SimpleRecipeSerializer {
 
   private SimpleRecipeSerializer() {}
 
+  /** Creates a serializer that always decodes to the supplied instance. */
+  public static <T extends Recipe<?>> RecipeSerializer<T> singleton(T instance) {
+    java.util.Objects.requireNonNull(instance);
+    return of(() -> instance);
+  }
+
+  /** Creates a serializer that constructs a fresh fieldless recipe per decode. */
+  public static <T extends Recipe<?>> RecipeSerializer<T> noArguments(Supplier<T> constructor) {
+    return of(constructor);
+  }
+
   public static <T extends Recipe<?>> RecipeSerializer<T> of(Supplier<T> constructor) {
     RecipeSerializer<T> serializer = new RecipeSerializer<>(MapCodec.unit(constructor), StreamCodec.of(
       (RegistryFriendlyByteBuf buffer, T recipe) -> {}, buffer -> constructor.get()));

@@ -111,4 +111,15 @@ class FluidRendererTest {
       }
     }
   }
+  @Test
+  void suppliesEveryAttributeRequiredByTheNativeEntityPipelines() {
+    try (ByteBufferBuilder memory = new ByteBufferBuilder(256)) {
+      BufferBuilder buffer = new BufferBuilder(memory, VertexFormat.Mode.QUADS, DefaultVertexFormat.ENTITY);
+      emit(buffer, new Matrix4f(), sprite(), Direction.UP, 0, false);
+      try (MeshData mesh = buffer.buildOrThrow()) {
+        assertEquals(4, mesh.drawState().vertexCount());
+      }
+    }
+  }
+
 }

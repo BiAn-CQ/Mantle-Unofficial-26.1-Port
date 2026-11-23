@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Lightmap;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.FluidModel;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -15,6 +14,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidType;
 import org.joml.Matrix3f;
@@ -22,6 +22,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import slimeknights.mantle.client.render.FluidCuboid.FluidFace;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
@@ -47,6 +48,17 @@ public class FluidRenderer {
     return (combinedLight & 0xFFFF0000) | Math.max(blockLight << 4, combinedLight & 0xFFFF);
   }
 
+  /** Selects native entity pipelines, including lightmap, overlay and normals. */
+  public static net.minecraft.client.renderer.rendertype.RenderType getRenderType(boolean transparent, boolean cull) {
+    if (transparent) return cull ? RenderTypes.entityTranslucentCullItemTarget(TextureAtlas.LOCATION_BLOCKS) : MantleRenderTypes.ENTITY_TRANSLUCENT_NO_CULL;
+    return cull ? RenderTypes.entityCutoutCull(TextureAtlas.LOCATION_BLOCKS) : MantleRenderTypes.ENTITY_CUTOUT_NO_CULL;
+  }
+  public static net.minecraft.client.renderer.rendertype.RenderType getRenderType(net.minecraft.world.level.material.Fluid fluid, boolean cull) {
+    var model = Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(fluid.defaultFluidState());
+    return getRenderType(model.layer() == net.minecraft.client.renderer.chunk.ChunkSectionLayer.TRANSLUCENT, cull);
+  }
+  public static net.minecraft.client.renderer.rendertype.RenderType getRenderType(net.minecraft.world.level.material.Fluid fluid) { return getRenderType(fluid, true); }
+
   /* Fluid cuboids */
 
   /**
@@ -56,7 +68,7 @@ public class FluidRenderer {
    * @return  UV mapped between 0 and 1
    */
   private static float boundUV(float value, boolean upper) {
-    value = value % 1;
+    value -= (int)value;
     if (value == 0) {
       // if it lands exactly on the 0 bound, map that to 1 instead for the larger UV
       return upper ? 1 : 0;
@@ -139,7 +151,7 @@ public class FluidRenderer {
     // Flowing faces historically sampled half of the sprite (8/16), while
     // still faces sampled the full sprite (16/16).
     float textureScale = flowing ? 0.5f : 1f;
-    if ((rotation % 180) == 90) {
+    if (rotation == 90 || rotation == 270) {
       minU = sprite.getU(v1 * textureScale);
       maxU = sprite.getU(v2 * textureScale);
       minV = sprite.getV(u1 * textureScale);
@@ -192,76 +204,74 @@ public class FluidRenderer {
     int b = color & 0xFF;
     switch (face) {
       case DOWN -> {
-        renderer.addVertex(matrix, x1, y1, z2).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y1, z1).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y1, z2).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y1, z2).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y1, z1).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y1, z2).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
       }
       case UP -> {
-        renderer.addVertex(matrix, x1, y2, z1).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x1, y2, z2).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y2, z1).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y2, z1).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y2, z2).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y2, z1).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
       }
       case NORTH -> {
-        renderer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x1, y2, z1).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y2, z1).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y1, z1).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y2, z1).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y2, z1).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y1, z1).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
       }
       case SOUTH -> {
-        renderer.addVertex(matrix, x2, y1, z2).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x1, y2, z2).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x1, y1, z2).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y1, z2).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y2, z2).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y1, z2).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
       }
       case WEST -> {
-        renderer.addVertex(matrix, x1, y1, z2).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x1, y2, z2).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x1, y2, z1).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y1, z2).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y2, z2).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y2, z1).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x1, y1, z1).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
       }
       case EAST -> {
-        renderer.addVertex(matrix, x2, y1, z1).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y2, z1).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
-        renderer.addVertex(matrix, x2, y1, z2).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y1, z1).setColor(r, g, b, a).setUv(u1, v1).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y2, z1).setColor(r, g, b, a).setUv(u2, v2).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y2, z2).setColor(r, g, b, a).setUv(u3, v3).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
+        renderer.addVertex(matrix, x2, y1, z2).setColor(r, g, b, a).setUv(u4, v4).setUv2(light1, light2).setOverlay(net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY).setNormal(normalX, normalY, normalZ);
       }
     }
   }
 
-  /**
-   * Renders a full fluid cuboid for the given data
-   * @param matrices  Matrix stack instance
-   * @param buffer    Buffer type
-   * @param still     Still sprite
-   * @param flowing   Flowing sprite
-   * @param cube      Fluid cuboid
-   * @param from      Fluid start
-   * @param to        Fluid end
-   * @param color     Fluid color
-   * @param light     Quad lighting
-   * @param isGas     If true, fluid is a gas
-   */
-  public static void renderCuboid(PoseStack matrices, VertexConsumer buffer, FluidCuboid cube, TextureAtlasSprite still, TextureAtlasSprite flowing, Vector3f from, Vector3f to, int color, int light, boolean isGas) {
-    renderCuboid(matrices.last(), buffer, cube, still, flowing, from, to, color, light, isGas);
+  /** Renders a full cuboid with explicit bounds. */
+  public static void renderCuboid(PoseStack matrices, VertexConsumer buffer, FluidCuboid cube, TextureAtlasSprite still, TextureAtlasSprite flowing, Vector3f from, Vector3f to, int color, int light) {
+    renderCuboid(matrices.last(), buffer, cube, still, flowing, from, to, color, light);
   }
 
-  /**
-   * Renders a full fluid cuboid using the immutable pose supplied by the 26.1
-   * submit renderer.  Keeping this overload here lets entity and particle
-   * renderers share the exact same fluid face/color/light logic as block
-   * renderers without creating a temporary PoseStack.
-   */
+  /** Renders a full cuboid with its model bounds. */
+  public static void renderCuboid(PoseStack matrices, VertexConsumer buffer, FluidCuboid cube, TextureAtlasSprite still, TextureAtlasSprite flowing, int color, int light) {
+    renderCuboid(matrices, buffer, cube, still, flowing, cube.getFromScaled(), cube.getToScaled(), color, light);
+  }
+
+  /** @deprecated gas now uses the face rotation defined by the model. */
+  @Deprecated(forRemoval = true)
+  public static void renderCuboid(PoseStack matrices, VertexConsumer buffer, FluidCuboid cube, TextureAtlasSprite still, TextureAtlasSprite flowing, Vector3f from, Vector3f to, int color, int light, boolean isGas) {
+    renderCuboid(matrices, buffer, cube, still, flowing, from, to, color, light);
+  }
+
+  /** @deprecated gas now uses the face rotation defined by the model. */
+  @Deprecated(forRemoval = true)
   public static void renderCuboid(PoseStack.Pose pose, VertexConsumer buffer, FluidCuboid cube, TextureAtlasSprite still, TextureAtlasSprite flowing, Vector3f from, Vector3f to, int color, int light, boolean isGas) {
+    renderCuboid(pose, buffer, cube, still, flowing, from, to, color, light);
+  }
+
+  /** Renders a cuboid from a deferred geometry submission. */
+  public static void renderCuboid(PoseStack.Pose pose, VertexConsumer buffer, FluidCuboid cube, TextureAtlasSprite still, TextureAtlasSprite flowing, Vector3f from, Vector3f to, int color, int light) {
     Matrix4f matrix = pose.pose();
-    int rotation = isGas ? 180 : 0;
-    for (Direction dir : Direction.values()) {
-      FluidFace face = cube.getFace(dir);
+    for (Direction direction : Direction.values()) {
+      FluidFace face = cube.getFace(direction);
       if (face != null) {
         boolean isFlowing = face.isFlowing();
-        int faceRot = (rotation + face.rotation()) % 360;
-        putTexturedQuad(buffer, matrix, isFlowing ? flowing : still, from, to, dir, color, light, faceRot, isFlowing);
+        putTexturedQuad(buffer, matrix, isFlowing ? flowing : still, from, to, direction, color, light, face.rotation(), isFlowing);
       }
     }
   }
@@ -280,19 +290,13 @@ public class FluidRenderer {
 
   /** Renders fluid cuboids from a 26.1 submit callback pose. */
   public static void renderCuboids(PoseStack.Pose pose, VertexConsumer buffer, List<FluidCuboid> cubes, FluidStack fluid, int light) {
-    if (fluid.isEmpty()) {
-      return;
-    }
-    renderCuboids(pose, buffer, cubes, fluid, light, fluid.getFluid().getFluidType().isLighterThanAir(), 0xFF);
+    renderCuboids(pose, buffer, cubes, fluid, light, 0xFF);
   }
 
-  /**
-   * Renders fluid cuboids while explicitly controlling face orientation.
-   * Pouring renderers use {@code false}: even lighter-than-air fluids travel
-   * through the downward-facing faucet/channel geometry.
-   */
+  /** @deprecated use the overload without the gas flag. */
+  @Deprecated(forRemoval = true)
   public static void renderCuboids(PoseStack.Pose pose, VertexConsumer buffer, List<FluidCuboid> cubes, FluidStack fluid, int light, boolean isGas) {
-    renderCuboids(pose, buffer, cubes, fluid, light, isGas, 0xFF);
+    renderCuboids(pose, buffer, cubes, fluid, light);
   }
 
   /** Renders cuboids with an additional 0-255 opacity multiplier. */
@@ -300,15 +304,8 @@ public class FluidRenderer {
     if (fluid.isEmpty()) {
       return;
     }
-    renderCuboids(pose, buffer, cubes, fluid, light, fluid.getFluid().getFluidType().isLighterThanAir(), opacity);
-  }
 
-  private static void renderCuboids(PoseStack.Pose pose, VertexConsumer buffer, List<FluidCuboid> cubes, FluidStack fluid, int light, boolean isGas, int opacity) {
-    if (fluid.isEmpty()) {
-      return;
-    }
-
-    FluidModel fluidModel = Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(fluid.getFluid().defaultFluidState());
+    net.minecraft.client.renderer.block.FluidModel fluidModel = Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(fluid.getFluid().defaultFluidState());
     TextureAtlasSprite still = fluidModel.stillMaterial().sprite();
     TextureAtlasSprite flowing = fluidModel.flowingMaterial().sprite();
     int color = fluidModel.fluidTintSource() == null ? -1 : fluidModel.fluidTintSource().colorAsStack(fluid);
@@ -320,29 +317,49 @@ public class FluidRenderer {
 
     // render all given cuboids
     for (FluidCuboid cube : cubes) {
-      renderCuboid(pose, buffer, cube, still, flowing, cube.getFromScaled(), cube.getToScaled(), color, light, isGas);
+      renderCuboid(pose, buffer, cube, still, flowing, cube.getFromScaled(), cube.getToScaled(), color, light);
     }
   }
 
-  /**
-   * Renders a fluid cuboid with the given offset, used to manually place cuboids from a list for rendering {@link #renderCuboids(PoseStack, VertexConsumer, List, FluidStack, int)}
-   * @param matrices  Matrix stack instance
-   * @param buffer    Buffer type
-   * @param cube      Fluid cuboid
-   * @param yOffset   Amount to offset the cube in the Y direction, used in faucets for rendering fluid in lower block
-   * @param still     Still sprite
-   * @param flowing   Flowing sprite
-   * @param color     Fluid color
-   * @param light     Quad lighting from TER
-   * @param isGas     If true, fluid is a gas
-   */
+  /** @deprecated use the overload without a gas flag and translate the pose stack. */
+  @Deprecated(forRemoval = true)
   public static void renderCuboid(PoseStack matrices, VertexConsumer buffer, FluidCuboid cube, float yOffset, TextureAtlasSprite still, TextureAtlasSprite flowing, int color, int light, boolean isGas) {
-    if (yOffset != 0) {
-      matrices.pushPose();
-      matrices.translate(0, yOffset, 0);
+    if (yOffset == 0) {
+      renderCuboid(matrices, buffer, cube, still, flowing, color, light);
+      return;
     }
-    renderCuboid(matrices, buffer, cube, still, flowing, cube.getFromScaled(), cube.getToScaled(), color, light, isGas);
-    if (yOffset != 0) {
+    matrices.pushPose();
+    matrices.translate(0, yOffset, 0);
+    renderCuboid(matrices, buffer, cube, still, flowing, color, light);
+    matrices.popPose();
+  }
+
+  /** A group of model cuboids at the same distance below a faucet. */
+  public record FaucetLayer(int offset, List<FluidCuboid> cuboids) {}
+
+  /** Collects the fluid geometry below a faucet before it is submitted for rendering. */
+  public static List<FaucetLayer> getFaucetLayers(LevelAccessor level, BlockPos pos, Direction direction) {
+    List<FaucetLayer> layers = new ArrayList<>();
+    int offset = 0;
+    FaucetFluid data;
+    do {
+      data = FaucetFluid.REGISTRY.get(level.getBlockState(pos.below(++offset)));
+      List<FluidCuboid> cuboids = data.getFluids(direction);
+      if (!cuboids.isEmpty()) {
+        layers.add(new FaucetLayer(offset, List.copyOf(cuboids)));
+      }
+    } while (data.isContinued());
+    return List.copyOf(layers);
+  }
+
+  /** Renders the stream below a faucet for callers using a vertex consumer directly. */
+  public static void renderFaucetFluids(LevelAccessor world, BlockPos pos, Direction direction, PoseStack matrices, VertexConsumer buffer, TextureAtlasSprite still, TextureAtlasSprite flowing, int color, int light) {
+    for (FaucetLayer layer : getFaucetLayers(world, pos, direction)) {
+      matrices.pushPose();
+      matrices.translate(0, -layer.offset(), 0);
+      for (FluidCuboid cube : layer.cuboids()) {
+        renderCuboid(matrices, buffer, cube, still, flowing, color, light);
+      }
       matrices.popPose();
     }
   }
@@ -359,7 +376,7 @@ public class FluidRenderer {
    * @param flipGas   If true, flips gas cubes
    */
   public static void renderScaledCuboid(PoseStack matrices, MultiBufferSource buffer, FluidCuboid cube, FluidStack fluid, float offset, int capacity, int light, boolean flipGas) {
-    renderScaledCuboid(matrices.last(), buffer.getBuffer(MantleRenderTypes.FLUID), cube, fluid, offset, capacity, light, flipGas);
+    renderScaledCuboid(matrices.last(), buffer.getBuffer(getRenderType(fluid.getFluid())), cube, fluid, offset, capacity, light, flipGas);
   }
 
   /**
@@ -375,31 +392,78 @@ public class FluidRenderer {
       return;
     }
 
-    FluidModel fluidModel = Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(fluid.getFluid().defaultFluidState());
+    net.minecraft.client.renderer.block.FluidModel fluidModel = Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(fluid.getFluid().defaultFluidState());
     TextureAtlasSprite still = fluidModel.stillMaterial().sprite();
     TextureAtlasSprite flowing = fluidModel.flowingMaterial().sprite();
     FluidType type = fluid.getFluid().getFluidType();
-    boolean isGas = type.isLighterThanAir();
     int color = fluidModel.fluidTintSource() == null ? -1 : fluidModel.fluidTintSource().colorAsStack(fluid);
     light = withBlockLight(light, type.getLightLevel(fluid));
 
-    // determine height based on fluid amount
+    float minY = cube.getFromScaled().y();
+    float maxY = cube.getToScaled().y();
+    float height = (fluid.getAmount() - offset) / capacity;
+    boolean flip = flipGas && type.isLighterThanAir();
+    float scaledY = flip ? maxY + height * (minY - maxY) : minY + height * (maxY - minY);
+    renderScaledCuboid(pose, buffer, cube, scaledY, flip, still, flowing, color, light);
+  }
+
+  /** Clips a cuboid against one shared liquid surface instead of scaling each cube. */
+  public static void renderScaledCuboid(PoseStack.Pose pose, VertexConsumer buffer, FluidCuboid cube, float scaledY, boolean flip,
+      TextureAtlasSprite still, TextureAtlasSprite flowing, int color, int light) {
     Vector3f from = cube.getFromScaled();
     Vector3f to = cube.getToScaled();
-    // gas renders upside down
-    float minY = from.y();
-    float maxY = to.y();
-    float height = (fluid.getAmount() - offset) / capacity;
-    if (isGas && flipGas) {
-      from = new Vector3f(from);
-      from.y = maxY + (height * (minY - maxY));
+    if (flip) {
+      if (scaledY >= to.y()) return;
+      if (scaledY > from.y()) from = new Vector3f(from.x(), scaledY, from.z());
     } else {
-      to = new Vector3f(to);
-      to.y = minY + (height * (maxY - minY));
+      if (scaledY <= from.y()) return;
+      if (scaledY < to.y()) to = new Vector3f(to.x(), scaledY, to.z());
     }
+    renderCuboid(pose, buffer, cube, still, flowing, from, to, color, light);
+  }
 
-    // draw cuboid
-    renderCuboid(pose, buffer, cube, still, flowing, from, to, color, light, isGas);
+  public static void renderScaledCuboid(PoseStack matrices, VertexConsumer buffer, FluidCuboid cube, float scaledY, boolean flip,
+      TextureAtlasSprite still, TextureAtlasSprite flowing, int color, int light) {
+    renderScaledCuboid(matrices.last(), buffer, cube, scaledY, flip, still, flowing, color, light);
+  }
+
+  /** @deprecated use the overload without the gas flag. */
+  @Deprecated(forRemoval = true)
+  public static void renderScaledCuboid(PoseStack matrices, VertexConsumer buffer, FluidCuboid cube, float scaledY, boolean flip,
+      TextureAtlasSprite still, TextureAtlasSprite flowing, int color, int light, boolean isGas) {
+    renderScaledCuboid(matrices, buffer, cube, scaledY, flip, still, flowing, color, light);
+  }
+
+  /** @deprecated use the overload without the gas flag. */
+  @Deprecated(forRemoval = true)
+  public static void renderScaledCuboid(PoseStack.Pose pose, VertexConsumer buffer, FluidCuboid cube, float scaledY, boolean flip,
+      TextureAtlasSprite still, TextureAtlasSprite flowing, int color, int light, boolean isGas) {
+    renderScaledCuboid(pose, buffer, cube, scaledY, flip, still, flowing, color, light);
+  }
+
+  /** Renders every cube against the same height across the full model bounds. */
+  public static void renderScaledModel(PoseStack matrices, MultiBufferSource buffer, boolean cull, FluidModel model,
+      FluidStack fluid, float offset, int capacity, int light, boolean flipGas) {
+    if (fluid.isEmpty() || capacity <= 0 || model.isEmpty()) return;
+    renderScaledModel(matrices.last(), buffer.getBuffer(getRenderType(fluid.getFluid(), cull)), model, fluid, offset, capacity, light, flipGas);
+  }
+
+  /** Submit-renderer overload without a mutable pose stack or buffer lookup. */
+  public static void renderScaledModel(PoseStack.Pose pose, VertexConsumer buffer, FluidModel model,
+      FluidStack fluid, float offset, int capacity, int light, boolean flipGas) {
+    if (fluid.isEmpty() || capacity <= 0 || model.isEmpty()) return;
+    var baked = Minecraft.getInstance().getModelManager().getFluidStateModelSet().get(fluid.getFluid().defaultFluidState());
+    TextureAtlasSprite still = baked.stillMaterial().sprite();
+    TextureAtlasSprite flowing = baked.flowingMaterial().sprite();
+    FluidType type = fluid.getFluid().getFluidType();
+    int color = baked.fluidTintSource() == null ? -1 : baked.fluidTintSource().colorAsStack(fluid);
+    light = withBlockLight(light, type.getLightLevel(fluid));
+    float minY = model.getMinScaled().y();
+    float maxY = model.getMaxScaled().y();
+    float height = (fluid.getAmount() - offset) / capacity;
+    boolean flip = flipGas && type.isLighterThanAir();
+    float scaledY = flip ? maxY + height * (minY - maxY) : minY + height * (maxY - minY);
+    for (FluidCuboid cube : model.getFluids()) renderScaledCuboid(pose, buffer, cube, scaledY, flip, still, flowing, color, light);
   }
 
   /** Same as {@link net.minecraft.client.renderer.ScreenEffectRenderer#renderFluid(Minecraft, PoseStack, ResourceLocation)} but with opacity and color control */

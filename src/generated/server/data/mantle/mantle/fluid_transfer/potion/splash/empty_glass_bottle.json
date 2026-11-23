@@ -1,7 +1,7 @@
 {
   "type": "mantle:empty_potion",
   "amount": 250,
-  "conditions": [
+  "neoforge:conditions": [
     {
       "type": "neoforge:not",
       "value": {

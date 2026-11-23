@@ -50,7 +50,7 @@ public class Loadables {
 
   /** Alias for the resource location loadable as it's a common need */
   public static final StringLoadable<Identifier> RESOURCE_LOCATION = IdentifierLoadable.DEFAULT;
-  public static final StringLoadable<ItemAbility> TOOL_ACTION = StringLoadable.DEFAULT.map(ItemAbility::get, ItemAbility::name);
+  public static final StringLoadable<ItemAbility> TOOL_ACTION = StringLoadable.NON_EMPTY.map(ItemAbility::get, ItemAbility::name);
 
   /* Registries */
   public static final IdentifierLoadable<SoundEvent> SOUND_EVENT = new RegistryLoadable<>(BuiltInRegistries.SOUND_EVENT);

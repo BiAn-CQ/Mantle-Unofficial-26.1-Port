@@ -49,15 +49,42 @@ public final class FluidContainerModel {
 
   private FluidContainerModel() {}
 
-  /** Optional explicit fluid, supporting both a compact ID and native component data. */
-  public record FluidDefinition(Identifier name, net.minecraft.core.component.DataComponentPatch components) {
-    private static final com.mojang.serialization.Codec<FluidDefinition> FULL_CODEC = RecordCodecBuilder.create(i -> i.group(
-      Identifier.CODEC.fieldOf("name").forGetter(FluidDefinition::name),
-      net.minecraft.core.component.DataComponentPatch.CODEC.optionalFieldOf("components", net.minecraft.core.component.DataComponentPatch.EMPTY).forGetter(FluidDefinition::components)
-    ).apply(i, FluidDefinition::new));
+  /** Optional explicit fluid, supporting a compact ID and native component data. */
+  public record FluidDefinition(Identifier name, net.minecraft.core.component.DataComponentPatch components, boolean optional) {
+    public FluidDefinition(Identifier name, net.minecraft.core.component.DataComponentPatch components) { this(name, components, false); }
+    private static final com.mojang.serialization.Codec<FluidDefinition> FULL_CODEC = new MapCodec<FluidDefinition>() {
+      @Override public <T> com.mojang.serialization.DataResult<FluidDefinition> decode(com.mojang.serialization.DynamicOps<T> ops, com.mojang.serialization.MapLike<T> input) {
+        return Identifier.CODEC.parse(ops, input.get("name")).flatMap(name -> {
+          T flag = input.get("optional");
+          var optional = flag == null ? com.mojang.serialization.DataResult.success(false) : com.mojang.serialization.Codec.BOOL.parse(ops, flag);
+          return optional.flatMap(isOptional -> {
+            // An absent optional fluid must not require its component types either.
+            if (isOptional && !BuiltInRegistries.FLUID.containsKey(name)) {
+              return com.mojang.serialization.DataResult.success(new FluidDefinition(name, net.minecraft.core.component.DataComponentPatch.EMPTY, true));
+            }
+            T components = input.get("components");
+            var patch = components == null ? com.mojang.serialization.DataResult.success(net.minecraft.core.component.DataComponentPatch.EMPTY)
+              : net.minecraft.core.component.DataComponentPatch.CODEC.parse(ops, components);
+            return patch.map(value -> new FluidDefinition(name, value, isOptional));
+          });
+        });
+      }
+      @Override public <T> com.mojang.serialization.RecordBuilder<T> encode(FluidDefinition value, com.mojang.serialization.DynamicOps<T> ops, com.mojang.serialization.RecordBuilder<T> prefix) {
+        prefix.add("name", Identifier.CODEC.encodeStart(ops, value.name()));
+        if (!value.components().isEmpty()) prefix.add("components", net.minecraft.core.component.DataComponentPatch.CODEC.encodeStart(ops, value.components()));
+        if (value.optional()) prefix.add("optional", ops.createBoolean(true));
+        return prefix;
+      }
+      @Override public <T> java.util.stream.Stream<T> keys(com.mojang.serialization.DynamicOps<T> ops) {
+        return java.util.stream.Stream.of("name", "components", "optional").map(ops::createString);
+      }
+    }.codec();
     public static final com.mojang.serialization.Codec<FluidDefinition> CODEC = com.mojang.serialization.Codec.either(Identifier.CODEC, FULL_CODEC)
       .xmap(e -> e.map(id -> new FluidDefinition(id, net.minecraft.core.component.DataComponentPatch.EMPTY), v -> v),
-        v -> v.components().isEmpty() ? com.mojang.datafixers.util.Either.left(v.name()) : com.mojang.datafixers.util.Either.right(v));
+        v -> v.components().isEmpty() && !v.optional() ? com.mojang.datafixers.util.Either.left(v.name()) : com.mojang.datafixers.util.Either.right(v))
+      .validate(value -> value.optional() || BuiltInRegistries.FLUID.containsKey(value.name())
+        ? com.mojang.serialization.DataResult.success(value)
+        : com.mojang.serialization.DataResult.error(() -> "Unknown fluid " + value.name()));
   }
 
   /** Model definition corresponding to {@code type: mantle:fluid_container}. */
@@ -65,15 +92,21 @@ public final class FluidContainerModel {
       Identifier parent,
       Map<String,Material> textures,
       Optional<FluidDefinition> fluid,
-      boolean flipGas
+      boolean flipGas,
+      Optional<Identifier> textureOverrides
   ) implements ItemModel.Unbaked {
     public static final MapCodec<Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
         Identifier.CODEC.optionalFieldOf("parent", DEFAULT_PARENT).forGetter(Unbaked::parent),
         com.mojang.serialization.Codec.unboundedMap(com.mojang.serialization.Codec.STRING, Material.CODEC)
             .optionalFieldOf("textures", Map.of()).forGetter(Unbaked::textures),
         FluidDefinition.CODEC.optionalFieldOf("fluid").forGetter(Unbaked::fluid),
-        com.mojang.serialization.Codec.BOOL.optionalFieldOf("flip_gas", true).forGetter(Unbaked::flipGas)
+        com.mojang.serialization.Codec.BOOL.optionalFieldOf("flip_gas", true).forGetter(Unbaked::flipGas),
+        Identifier.CODEC.optionalFieldOf("texture_overrides").forGetter(Unbaked::textureOverrides)
     ).apply(instance, Unbaked::new));
+
+    public Unbaked(Identifier parent, Map<String,Material> textures, Optional<FluidDefinition> fluid, boolean flipGas) {
+      this(parent, textures, fluid, flipGas, Optional.empty());
+    }
 
     public Unbaked {
       textures = Map.copyOf(textures);
@@ -121,19 +154,27 @@ public final class FluidContainerModel {
       generated.getAll().forEach(quads::addUnculledFace);
     }
 
-    if (!fluid.isEmpty() && fluidMask != null) {
-      Material.Baked mask = baker.materials().get(fluidMask, parent);
+    Material.Baked override = null;
+    if (!fluid.isEmpty() && definition.fluid().isEmpty() && definition.textureOverrides().isPresent()) {
+      Map<String,Identifier> overrides = TextureMapManager.INSTANCE.getTextureMap(Minecraft.getInstance().getResourceManager(), definition.textureOverrides().get());
+      Identifier sprite = overrides.get(BuiltInRegistries.FLUID.getKey(fluid.getFluid()).toString());
+      if (sprite != null) override = baker.materials().get(new Material(sprite), parent);
+    }
+    if (!fluid.isEmpty() && (fluidMask != null || override != null)) {
+      Material.Baked mask = fluidMask == null ? null : baker.materials().get(fluidMask, parent);
       FluidModel fluidModel = Minecraft.getInstance().getModelManager().getFluidStateModelSet()
         .get(fluid.getFluid().defaultFluidState());
-      Material.Baked baked = fluidModel.stillMaterial();
+      Material.Baked baked = override == null ? fluidModel.stillMaterial() : override;
       if (particle == null) {
         particle = baked;
       }
       int color = fluidColor(fluid);
-      tints = List.of(new Constant(color));
+      tints = override == null ? List.of(new Constant(color)) : List.of();
       int light = fluid.getFluid().getFluidType().getLightLevel(fluid);
-      QuadCollection generated = UnbakedElementsHelper.bakeItemMaskQuads(baker, 0, mask, baked,
-        new ComposedModelState(state, FLUID_TRANSFORM), new ExtraFaceData(0xFFFFFFFF, light, true));
+      ModelState fluidState = new ComposedModelState(state, FLUID_TRANSFORM);
+      QuadCollection generated = override == null
+        ? UnbakedElementsHelper.bakeItemMaskQuads(baker, 0, mask, baked, fluidState, new ExtraFaceData(0xFFFFFFFF, light, true))
+        : baker.compute(new ItemModelGenerator.ItemLayerKey(baked, fluidState, -1, new ExtraFaceData(0xFFFFFFFF, light, true)));
       generated.getAll().forEach(quads::addUnculledFace);
     }
 
@@ -192,7 +233,8 @@ public final class FluidContainerModel {
       FluidStack contained;
       if (definition.fluid().isPresent()) {
         FluidDefinition explicit = definition.fluid().get();
-        var value = BuiltInRegistries.FLUID.getValue(explicit.name());
+        var value = explicit.optional() && !BuiltInRegistries.FLUID.containsKey(explicit.name())
+          ? net.minecraft.world.level.material.Fluids.LAVA : BuiltInRegistries.FLUID.getValue(explicit.name());
         contained = value == null || value == net.minecraft.world.level.material.Fluids.EMPTY ? FluidStack.EMPTY
           : slimeknights.mantle.util.DataComponentHelper.makeStack(value, FluidType.BUCKET_VOLUME, explicit.components());
       } else {

@@ -2,7 +2,10 @@
   "model": {
     "type": "mantle:fluid_container",
     "parent": "neoforge:item/bucket_drip",
-    "fluid": "mantle:mushroom_stew",
+    "fluid": {
+      "name": "mantle:mushroom_stew",
+      "optional": true
+    },
     "flip_gas": false
   }
 }

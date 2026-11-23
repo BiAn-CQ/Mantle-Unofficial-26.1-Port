@@ -1,6 +1,6 @@
 {
   "type": "mantle:fill_copy_data",
-  "conditions": [
+  "neoforge:conditions": [
     {
       "type": "mantle:tag_filled",
       "registry": "minecraft:fluid",
@@ -11,7 +11,6 @@
       "tag": "c:bottles/splash"
     }
   ],
-  "copy": "minecraft:potion_contents",
   "fluid": {
     "amount": 250,
     "ingredient": {

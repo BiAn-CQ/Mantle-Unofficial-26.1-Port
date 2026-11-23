@@ -1,6 +1,6 @@
 {
   "type": "mantle:fill_item",
-  "conditions": [
+  "neoforge:conditions": [
     {
       "type": "mantle:tag_filled",
       "tag": "c:bottles/splash"

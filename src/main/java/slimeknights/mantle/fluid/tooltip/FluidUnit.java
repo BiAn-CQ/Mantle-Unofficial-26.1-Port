@@ -14,7 +14,7 @@ import java.util.List;
 @SuppressWarnings("ClassCanBeRecord") // needed in GSON
 public class FluidUnit {
   public static final RecordLoadable<FluidUnit> LOADABLE = RecordLoadable.create(
-    StringLoadable.DEFAULT.requiredField("key", FluidUnit::key),
+    StringLoadable.NON_EMPTY.requiredField("key", FluidUnit::key),
     IntLoadable.FROM_ONE.requiredField("needed", FluidUnit::needed), FluidUnit::new);
 
   private final String key;

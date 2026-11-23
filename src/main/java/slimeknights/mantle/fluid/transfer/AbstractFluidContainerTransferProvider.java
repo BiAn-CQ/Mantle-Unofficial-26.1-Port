@@ -1,6 +1,6 @@
 package slimeknights.mantle.fluid.transfer;
 
-import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonElement;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.PackOutput;
@@ -64,12 +64,18 @@ public abstract class AbstractFluidContainerTransferProvider extends GenericData
   /** Adds generic fill and empty for a container */
   protected void addFillEmpty(String prefix, ItemLike item, ItemLike container, FluidOutput fill, FluidIngredient drain, boolean nbt, ICondition... conditions) {
     if (nbt) {
-      addTransfer(prefix + "empty", new EmptyFluidWithNBTTransfer(Ingredient.of(item), ItemOutput.fromItem(container), fill), conditions);
-      addTransfer(prefix + "fill", new FillFluidWithNBTTransfer(Ingredient.of(container), ItemOutput.fromItem(item), drain), conditions);
+      addTransfer(prefix + "empty", new EmptyFluidCopyDataTransfer(Ingredient.of(item), ItemOutput.fromItem(container), fill), conditions);
+      addTransfer(prefix + "fill", new FillFluidCopyDataTransfer(Ingredient.of(container), ItemOutput.fromItem(item), drain), conditions);
     } else {
       addTransfer(prefix + "empty", new EmptyFluidContainerTransfer(Ingredient.of(item), ItemOutput.fromItem(container), fill), conditions);
       addTransfer(prefix + "fill", new FillFluidContainerTransfer(Ingredient.of(container), ItemOutput.fromItem(item), drain), conditions);
     }
+  }
+
+  /** Adds generic fill and empty using a native sized ingredient. */
+  protected void addFillEmpty(String prefix, ItemLike item, ItemLike container, FluidOutput fill,
+      net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient drain, boolean copyData, ICondition... conditions) {
+    addFillEmpty(prefix, item, container, fill, FluidIngredient.of(drain), copyData, conditions);
   }
 
   /** Adds generic fill and empty for a container */
@@ -127,9 +133,10 @@ public abstract class AbstractFluidContainerTransferProvider extends GenericData
   @Override
   public CompletableFuture<?> run(CachedOutput cache) {
     return registries.thenCompose(lookup -> {
-      try (IngredientLoadable.Scope ignored = IngredientLoadable.pushOps(lookup.createSerializationContext(JsonOps.INSTANCE))) {
+      var ops = lookup.createSerializationContext(JsonOps.INSTANCE);
+      try (IngredientLoadable.Scope ignored = IngredientLoadable.pushOps(ops)) {
         addTransfers(lookup);
-        return allOf(allTransfers.entrySet().stream().map(entry -> saveJson(cache, entry.getKey(), entry.getValue().toJson())));
+        return allOf(allTransfers.entrySet().stream().map(entry -> saveJson(cache, entry.getKey(), entry.getValue().toJson(ops))));
       }
     });
   }
@@ -137,17 +144,9 @@ public abstract class AbstractFluidContainerTransferProvider extends GenericData
   /** Json with transfer and condition */
   private record TransferJson(IFluidContainerTransfer transfer, ICondition[] conditions) {
     /** Serializes this to JSON */
-    public JsonElement toJson() {
-      JsonElement element = IFluidContainerTransfer.LOADER.serialize(transfer, slimeknights.mantle.data.loadable.field.ContextKey.currentContext());
-      assert element.isJsonObject();
-      if (conditions.length != 0) {
-        JsonArray array = new JsonArray();
-        for (ICondition condition : conditions) {
-          array.add(JsonHelper.serializeCondition(condition));
-        }
-        element.getAsJsonObject().add("conditions", array);
-      }
-      return element;
+    public JsonObject toJson(net.minecraft.resources.RegistryOps<JsonElement> ops) {
+      JsonObject json = IFluidContainerTransfer.LOADER.serialize(transfer, slimeknights.mantle.data.loadable.field.ContextKey.currentContext()).getAsJsonObject();
+      return JsonHelper.serializeConditions(ops, json, java.util.List.of(conditions));
     }
   }
 }

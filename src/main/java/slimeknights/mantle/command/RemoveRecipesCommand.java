@@ -212,9 +212,7 @@ public class RemoveRecipesCommand {
     GeneratePackHelper.saveMcmeta(pack);
 
     // create the object for removing recipes
-    JsonObject json = new JsonObject();
-    json.add("neoforge:conditions", JsonHelper.serializeConditions(NeverCondition.INSTANCE));
-    String jsonString = DEFAULT_GSON.toJson(json);
+    String jsonString = DEFAULT_GSON.toJson(JsonHelper.serializeConditions(new JsonObject(), NeverCondition.INSTANCE));
 
     int successes = 0;
     Path data = pack.resolve(PackType.SERVER_DATA.getDirectory());
@@ -268,7 +266,7 @@ public class RemoveRecipesCommand {
     // create the object for removing recipes
     Path data = pack.resolve(PackType.SERVER_DATA.getDirectory());
     Path path = data.resolve(id.getNamespace() + "/recipe/" + id.getPath() + ".json");
-    if (!GeneratePackHelper.saveConditionRemove(path, "neoforge:conditions")) {
+    if (!GeneratePackHelper.saveConditionRemove(path)) {
       throw GeneratePackHelper.FAILED_SAVE.create(id);
     }
 

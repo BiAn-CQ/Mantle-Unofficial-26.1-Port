@@ -83,6 +83,15 @@ public class ItemDeferredRegister extends DeferredRegisterWrapper<Item> {
   }
 
 
+  public ItemObject<Item> registerOptionalTooltip(String name, Item.Properties props) {
+    return register(name, () -> new slimeknights.mantle.item.tooltip.OptionalTooltipItem(bindItemProperties(props)));
+  }
+  public ItemObject<Item> registerOptionalTooltip(String name) { return registerOptionalTooltip(name, new Item.Properties()); }
+  public ItemObject<Item> registerFixedTooltip(String name, Item.Properties props) {
+    return register(name, id -> slimeknights.mantle.item.tooltip.FixedTooltipItem.fromId(id, bindItemProperties(props)));
+  }
+  public ItemObject<Item> registerFixedTooltip(String name) { return registerFixedTooltip(name, new Item.Properties()); }
+
   public <I extends Item> ItemObject<I> register(String name, Function<net.minecraft.resources.Identifier,? extends I> factory) {
     return register(name, () -> factory.apply(resource(name)));
   }

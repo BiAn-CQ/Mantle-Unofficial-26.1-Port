@@ -35,7 +35,7 @@ class CopyDataTransferTest {
   }
 
   @Test
-  void fillingCopiesOnlyTheSelectedComponents() {
+  void fillingCopiesTheFullComponentPatch() {
     var transfer = new FillFluidCopyDataTransfer(Ingredient.of(Items.GLASS_BOTTLE), ItemOutput.fromItem(Items.POTION),
       FluidIngredient.of(Fluids.WATER, 250), List.of(DataComponents.POTION_CONTENTS));
     var fluid = new FluidStack(Fluids.WATER, 250);
@@ -44,7 +44,7 @@ class CopyDataTransferTest {
     fluid.set(DataComponents.CUSTOM_NAME, Component.literal("Tank name"));
     var filled = transfer.getFilled(fluid);
     assertThat(filled.get(DataComponents.POTION_CONTENTS)).isEqualTo(potion);
-    assertThat(filled.get(DataComponents.CUSTOM_NAME)).isNull();
+    assertThat(filled.get(DataComponents.CUSTOM_NAME)).isEqualTo(Component.literal("Tank name"));
   }
 
   @Test
@@ -58,7 +58,7 @@ class CopyDataTransferTest {
     item.set(DataComponents.CUSTOM_NAME, Component.literal("Bottle name"));
     var fluid = transfer.getFluid(item);
     assertThat(fluid.get(DataComponents.POTION_CONTENTS)).isEqualTo(potion);
-    assertThat(fluid.get(DataComponents.CUSTOM_NAME)).isNull();
+    assertThat(fluid.get(DataComponents.CUSTOM_NAME)).isEqualTo(Component.literal("Bottle name"));
     assertThat(base.get(DataComponents.POTION_CONTENTS)).isNull();
   }
 
@@ -83,11 +83,11 @@ class CopyDataTransferTest {
   }
 
   @Test
-  void copyComponentSyntaxAcceptsACompactIdentifier() {
-    var json = JsonParser.parseString("{\"input\":\"minecraft:glass_bottle\",\"result\":{\"id\":\"minecraft:potion\"},\"fluid\":{\"fluid\":\"minecraft:water\",\"amount\":250},\"copy\":\"minecraft:potion_contents\"}");
+  void copyTransferNoLongerRequiresAComponentWhitelist() {
+    var json = JsonParser.parseString("{\"input\":\"minecraft:glass_bottle\",\"result\":{\"id\":\"minecraft:potion\"},\"fluid\":{\"fluid\":\"minecraft:water\",\"amount\":250}}");
     var transfer = FillFluidCopyDataTransfer.LOADER.convert(json, "transfer");
     var encoded = transfer.serialize(null);
     assertThat(encoded.get("type").getAsString()).isEqualTo("mantle:fill_copy_data");
-    assertThat(encoded.get("copy").getAsString()).isEqualTo("minecraft:potion_contents");
+    assertThat(encoded.has("copy")).isFalse();
   }
 }

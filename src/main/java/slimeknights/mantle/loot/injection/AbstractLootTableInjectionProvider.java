@@ -8,6 +8,7 @@ import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.common.conditions.ICondition;
 import com.mojang.serialization.JsonOps;
 import slimeknights.mantle.data.GenericDataProvider;
+import slimeknights.mantle.util.JsonHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,26 +18,33 @@ import java.util.concurrent.CompletableFuture;
 public abstract class AbstractLootTableInjectionProvider extends GenericDataProvider {
   private final List<Builder> builders = new ArrayList<>();
   private final String domain;
+  private final CompletableFuture<net.minecraft.core.HolderLookup.Provider> registries;
 
   public AbstractLootTableInjectionProvider(PackOutput output, String domain) {
+    this(output, domain, CompletableFuture.completedFuture(slimeknights.mantle.util.RegistryHelper.BUILTIN_REGISTRY_ACCESS));
+  }
+
+  public AbstractLootTableInjectionProvider(PackOutput output, String domain, CompletableFuture<net.minecraft.core.HolderLookup.Provider> registries) {
     super(output, Target.DATA_PACK, LootTableInjector.FOLDER);
     this.domain = domain;
+    this.registries = registries;
   }
 
   /** Method to add all relevant tables */
-  protected abstract void addTables();
+  protected void addTables() {}
+  protected void addTables(net.minecraft.core.HolderLookup.Provider lookup) { addTables(); }
 
   @Override
   public final CompletableFuture<?> run(CachedOutput output) {
-    addTables();
-    // add all builders to the output
-    return allOf(builders.stream().map(builder -> {
-      JsonObject json = LootTableInjection.LOADABLE.serialize(builder.build()).getAsJsonObject();
-      if (builder.conditions.length > 0) {
-        ICondition.writeConditions(JsonOps.INSTANCE, json, List.of(builder.conditions));
-      }
-      return saveJson(output, Identifier.fromNamespaceAndPath(domain, builder.path), json);
-    }));
+    return registries.thenCompose(lookup -> {
+      addTables(lookup);
+      var ops = lookup.createSerializationContext(JsonOps.INSTANCE);
+      return allOf(builders.stream().map(builder -> {
+        JsonObject json = LootTableInjection.CODEC.encodeStart(ops, builder.build()).getOrThrow().getAsJsonObject();
+        JsonHelper.serializeConditions(ops, json, List.of(builder.conditions));
+        return saveJson(output, Identifier.fromNamespaceAndPath(domain, builder.path), json);
+      }));
+    });
   }
 
   /** Creates a new injection */

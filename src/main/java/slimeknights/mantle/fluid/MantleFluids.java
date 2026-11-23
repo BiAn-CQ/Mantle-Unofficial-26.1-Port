@@ -140,7 +140,7 @@ public class MantleFluids {
   /* Events */
 
   /** Dispenser behavior for a bucket. */
-  public static DispenseItemBehavior DISPENCE_BUCKET = new DefaultDispenseItemBehavior() {
+  public static DispenseItemBehavior DISPENSE_BUCKET = new DefaultDispenseItemBehavior() {
     private final DefaultDispenseItemBehavior defaultDispenseItemBehavior = new DefaultDispenseItemBehavior();
 
     @Override
@@ -157,10 +157,14 @@ public class MantleFluids {
     }
   };
 
+  /** @deprecated use DISPENSE_BUCKET. */
+  @Deprecated
+  public static final DispenseItemBehavior DISPENCE_BUCKET = DISPENSE_BUCKET;
+
   /** Registers dispenser behavior for the given fluid */
   private static void registerDispenser(FlowingFluidObject<?> fluid) {
     if (fluid.isBound()) {
-      DispenserBlock.registerBehavior(fluid, DISPENCE_BUCKET);
+      DispenserBlock.registerBehavior(fluid, DISPENSE_BUCKET);
     }
   }
 
@@ -180,7 +184,7 @@ public class MantleFluids {
       event.registerItem(Capabilities.Fluid.ITEM, (stack, context) -> ((PotionBucketItem)stack.getItem()).getFluidHandler(context), potion.asItem());
     }
     // powder snow adds a capability to the vanilla powder snow bucket
-    if (powderSnow.isBound()) {
+    if (powderSnow.isBound() && Config.POWDER_SNOW_BUCKET.getAsBoolean()) {
       event.registerItem(Capabilities.Fluid.ITEM, (stack, context) -> new ConstantFluidHandlerItem(new FluidStack(powderSnow.get(), FluidType.BUCKET_VOLUME), context, ItemResource.of(Items.BUCKET)), powderSnow.asItem());
     }
   }

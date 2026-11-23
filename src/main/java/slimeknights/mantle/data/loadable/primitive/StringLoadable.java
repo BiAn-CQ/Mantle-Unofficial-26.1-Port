@@ -20,11 +20,21 @@ import java.util.function.Function;
 @SuppressWarnings("unused")  // API
 public interface StringLoadable<T> extends Loadable<T> {
   /** Loadable for the default max string length */
-  StringLoadable<String> DEFAULT = maxLength(Short.MAX_VALUE);
+  StringLoadable<String> DEFAULT = minLength(0);
+  /** Default string loadable that disallows empty values. */
+  StringLoadable<String> NON_EMPTY = minLength(1);
+
+  static StringLoadable<String> length(int minLength, int maxLength) {
+    return new LengthStringLoadable(minLength, maxLength);
+  }
+
+  static StringLoadable<String> minLength(int minLength) {
+    return length(minLength, Short.MAX_VALUE);
+  }
 
   /** Creates a new string loadable with the given max length */
   static StringLoadable<String> maxLength(int maxLength) {
-    return new MaxLengthStringLoadable(maxLength);
+    return length(0, maxLength);
   }
 
   /**

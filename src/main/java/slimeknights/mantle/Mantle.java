@@ -132,6 +132,7 @@ public class Mantle {
     slimeknights.mantle.registration.MantleData.init(bus);
     slimeknights.mantle.registration.MantleAttributes.init(bus);
     MantleIngredientTypes.init(bus);
+    LootTableInjector.init(bus);
     // Vanilla only synchronizes recipe displays; multi-recipes need their recipe instances too.
     NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, OnDatapackSyncEvent.class, event ->
       event.sendRecipes(RecipeType.CRAFTING, RecipeType.SMELTING, RecipeType.SMOKING, RecipeType.BLASTING,
@@ -163,7 +164,6 @@ public class Mantle {
     MantleCommand.init();
     OffhandCooldownTracker.init();
     TagPreference.init();
-    LootTableInjector.init();
   }
 
   private void register(RegisterEvent event) {

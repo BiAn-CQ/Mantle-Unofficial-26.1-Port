@@ -38,7 +38,17 @@ public class FluidCuboid {
   /** Loader for a list of size 0 or more */
   public static final Loadable<List<FluidCuboid>> EMPTY_LIST_LOADABLE = LOADABLE.list(CollectionLoadable.COMPACT_OR_EMPTY);
   /** Data loader to fetch a list of fluid cuboids from JSON */
-  public static final BlockStateDataMapLoader<List<FluidCuboid>> REGISTRY = new BlockStateDataMapLoader<>("Block entity fluids", "mantle/model/block_fluids", LIST_LOADABLE);
+  @Deprecated(forRemoval = true)
+  public static final BlockStateDataMapLoader<List<FluidCuboid>> REGISTRY = new BlockStateDataMapLoader<>("Block entity fluids", "mantle/model/block_fluids", LIST_LOADABLE) {
+    @Override @Nullable public List<FluidCuboid> get(net.minecraft.world.level.block.state.BlockState state) {
+      FluidModel model = FluidModel.REGISTRY.get(state);
+      return model == null ? null : model.getFluids();
+    }
+    @Override public List<FluidCuboid> get(net.minecraft.world.level.block.state.BlockState state, List<FluidCuboid> fallback) {
+      FluidModel model = FluidModel.REGISTRY.get(state);
+      return model == null ? fallback : model.getFluids();
+    }
+  };
 
   /** Fluid start, scaled for block models */
   @Getter

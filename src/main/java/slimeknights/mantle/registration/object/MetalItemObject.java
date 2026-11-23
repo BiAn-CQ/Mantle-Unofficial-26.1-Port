@@ -69,7 +69,7 @@ public class MetalItemObject extends ItemObject<Block> implements MultiObject<It
 
   @Override
   public List<ItemLike> values() {
-    return List.of(get(), getIngot(), getIngot());
+    return List.of(get(), getIngot(), getNugget());
   }
 
   @Override

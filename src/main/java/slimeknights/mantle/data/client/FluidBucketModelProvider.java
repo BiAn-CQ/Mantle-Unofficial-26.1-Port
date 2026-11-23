@@ -29,20 +29,22 @@ public class FluidBucketModelProvider extends GenericDataProvider {
   }
 
   /** Record for bucket model data */
-  private record BucketModel(Identifier fluid, Identifier bucket, boolean flipGas) {
+  private record BucketModel(Identifier fluid, Identifier bucket, boolean flipGas, boolean optional) {
     /** Creates the JSON for this model */
     public JsonObject serialize() {
       JsonObject json = new JsonObject();
-      JsonObject model = new slimeknights.mantle.client.model.builder.FluidContainerModelBuilder(Identifier.parse("neoforge:item/bucket_drip"))
-        .fluid(fluid).flipGas(flipGas).toJson();
+      var builder = new slimeknights.mantle.client.model.builder.FluidContainerModelBuilder(Identifier.parse("neoforge:item/bucket_drip")).fluid(fluid).flipGas(flipGas);
+      if (optional) builder.fluidOptional();
+      JsonObject model = builder.toJson();
       json.add("model", model);
       return json;
     }
   }
 
   /** Adds a bucket to the list */
-  protected void model(Identifier fluid, Identifier bucket, boolean flipGas) {
-    buckets.add(new BucketModel(fluid, bucket, flipGas));
+  protected void model(Identifier fluid, Identifier bucket, boolean flipGas) { model(fluid, bucket, flipGas, false); }
+  protected void model(Identifier fluid, Identifier bucket, boolean flipGas, boolean optional) {
+    buckets.add(new BucketModel(fluid, bucket, flipGas, optional));
   }
 
   /** Adds a bucket to the list. */
@@ -52,12 +54,12 @@ public class FluidBucketModelProvider extends GenericDataProvider {
 
   /** Adds a bucket to the list from the fluid object, without requiring it to be bound. */
   protected void optionalFluid(FluidObject<?> fluid, boolean flipGas) {
-    model(fluid.id(), flipGas);
+    model(fluid.id(), fluid.id().withSuffix("_bucket"), flipGas, true);
   }
 
   /** Adds a bucket to the list from the fluid object, requires it to be bound. */
   protected void requiredFluid(FluidObject<?> fluid) {
-    optionalFluid(fluid, fluid.getType().isLighterThanAir());
+    model(fluid.id(), fluid.getType().isLighterThanAir());
   }
 
   /** Adds a bucket to the list from a bucket item. */
